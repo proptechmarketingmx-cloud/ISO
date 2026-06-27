@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KPIs Propiedades — ISO</title>
+  <link rel="stylesheet" href="/assets/css/estilo.css"/>
+</head>
+<body>
+<div class="app-layout" id="app">
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">KPIs — Propiedades</span>
+        <span class="topbar-subtitle">Indicadores de inventario y operaciones</span>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-secondary" id="btn-refresh">
+          <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Actualizar
+        </button>
+      </div>
+    </header>
+    <main class="page-inner fade-in">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-header-title">KPIs de Propiedades</h1>
+          <p class="page-header-sub">Inventario, precios y operaciones inmobiliarias</p>
+        </div>
+        <div class="page-header-right">
+          <div class="tabs" style="background:var(--c-surface-2)">
+            <a href="/kpis/clientes/" class="tab">Clientes</a>
+            <a href="/kpis/propiedades/" class="tab active">Propiedades</a>
+            <a href="/kpis/asesores/" class="tab">Asesores</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-grid stagger" id="kpi-grid">
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+      </div>
+
+      <div class="grid-2" style="margin-top:0">
+        <div class="card fade-in">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              Propiedades por Tipo
+            </span>
+          </div>
+          <div class="card-body" style="padding:0">
+            <table>
+              <thead><tr><th>Tipo</th><th>Total</th><th>Disponibles</th><th>Precio Prom.</th></tr></thead>
+              <tbody id="tbody-tipos"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card fade-in" style="animation-delay:0.1s">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+              Propiedades por Status
+            </span>
+          </div>
+          <div class="card-body" style="padding:0">
+            <table>
+              <thead><tr><th>Status</th><th>Cantidad</th><th>%</th></tr></thead>
+              <tbody id="tbody-status"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script type="module">
+import '/assets/js/nav.js';
+import { kpisApi } from '/assets/js/api.js';
+import { formatNumber, formatCurrency, formatPercent } from '/assets/js/utils.js';
+
+async function load() {
+  try {
+    const data = await kpisApi.propiedades();
+    const kpis = [
+      { label:'Total Propiedades',  value: formatNumber(data.total_propiedades),  color:'var(--c-warn)',   colorBg:'var(--c-warn-bg)',   icon:`<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>` },
+      { label:'Disponibles',        value: formatNumber(data.disponibles),        color:'var(--c-ok)',     colorBg:'var(--c-ok-bg)',     icon:`<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>` },
+      { label:'Precio Prom. Venta', value: formatCurrency(data.precio_prom_venta,0), color:'var(--c-accent)', colorBg:'var(--c-accent-muted)',icon:`<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>` },
+      { label:'Precio Prom. Renta', value: formatCurrency(data.precio_prom_renta,0), color:'var(--c-info)',   colorBg:'var(--c-info-bg)',   icon:`<svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>` },
+    ];
+    document.getElementById('kpi-grid').innerHTML = kpis.map(k => `
+      <div class="kpi-card" style="--kpi-color:${k.color};--kpi-color-bg:${k.colorBg}">
+        <div class="kpi-top"><div class="kpi-icon">${k.icon}</div></div>
+        <div class="kpi-value">${k.value}</div>
+        <div class="kpi-label">${k.label}</div>
+      </div>
+    `).join('');
+
+    const tipos = data.por_tipo || [];
+    document.getElementById('tbody-tipos').innerHTML = tipos.map(t => `
+      <tr>
+        <td>${t.tipo||'—'}</td>
+        <td><strong>${formatNumber(t.total)}</strong></td>
+        <td><span class="badge badge-success">${formatNumber(t.disponibles||0)}</span></td>
+        <td style="color:var(--c-accent)">${formatCurrency(t.precio_promedio||0,0)}</td>
+      </tr>
+    `).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--c-text-2);padding:20px">Sin datos</td></tr>`;
+
+    const statuses = data.por_status || [];
+    const totalSt  = statuses.reduce((s,x) => s+x.cantidad, 0) || 1;
+    const STATUS_CLASS = { disponible:'badge-success', reservada:'badge-warning', vendida:'badge-muted', rentada:'badge-info' };
+    document.getElementById('tbody-status').innerHTML = statuses.map(s => `
+      <tr>
+        <td><span class="badge ${STATUS_CLASS[s.status]||'badge-muted'}">${s.status||'—'}</span></td>
+        <td><strong>${formatNumber(s.cantidad)}</strong></td>
+        <td class="muted">${formatPercent(s.cantidad/totalSt*100)}</td>
+      </tr>
+    `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--c-text-2);padding:20px">Sin datos</td></tr>`;
+
+  } catch {
+    document.getElementById('kpi-grid').innerHTML = `<div style="grid-column:1/-1;color:var(--c-text-2);padding:20px">Sin conexión al servidor.</div>`;
+  }
+}
+
+document.getElementById('btn-refresh').addEventListener('click', load);
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Gestión de clientes (Expediente Único) — ISO Plataforma Inmobiliaria"/>
+  <title>Clientes — ISO</title>
+  <link rel="stylesheet" href="/assets/css/estilo.css"/>
+</head>
+<body>
+<div class="app-layout" id="app">
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">Clientes</span>
+        <span class="topbar-subtitle">Gestión de cartera y expedientes</span>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" id="btn-nuevo-cliente">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nuevo Cliente
+        </button>
+      </div>
+    </header>
+
+    <main class="page-inner fade-in" id="clientes-app-root">
+      <!-- Los componentes JS se montarán aquí -->
+      <div class="skeleton" style="height: 400px;"></div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal confirmación eliminación -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal modal-confirm">
+    <div class="modal-body" style="text-align:center">
+      <div class="modal-confirm-icon"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></div>
+      <h2 class="modal-title" style="margin-bottom:8px">Eliminar Cliente</h2>
+      <p class="modal-confirm-text">¿Está seguro de eliminar este registro?</p>
+      <p class="modal-confirm-text" style="margin-top:8px;color:var(--c-text-2)">Esta acción no podrá deshacerse.</p>
+    </div>
+    <div class="modal-footer" style="justify-content:center">
+      <button class="btn btn-ghost" data-close="modal-confirm">Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirm-delete">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import '/assets/js/nav.js';
+import { initClientesApp } from './js/main.js';
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initClientesApp);
+} else {
+  initClientesApp();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KPIs Clientes — ISO</title>
+  <link rel="stylesheet" href="/assets/css/estilo.css"/>
+</head>
+<body>
+<div class="app-layout" id="app">
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">KPIs — Clientes</span>
+        <span class="topbar-subtitle">Indicadores clave de rendimiento — Clientes y Leads</span>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-secondary" id="btn-refresh">
+          <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Actualizar
+        </button>
+      </div>
+    </header>
+    <main class="page-inner fade-in">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-header-title">KPIs de Clientes</h1>
+          <p class="page-header-sub">Métricas de captación, conversión y retención</p>
+        </div>
+        <div class="page-header-right">
+          <div class="tabs" style="background:var(--c-surface-2)">
+            <a href="/kpis/clientes/" class="tab active">Clientes</a>
+            <a href="/kpis/propiedades/" class="tab">Propiedades</a>
+            <a href="/kpis/asesores/" class="tab">Asesores</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Grid -->
+      <div class="kpi-grid stagger" id="kpi-grid">
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+      </div>
+
+      <!-- Tabla resumen leads -->
+      <div class="grid-2" style="margin-top:0">
+        <div class="card fade-in">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Leads por Etapa
+            </span>
+          </div>
+          <div class="card-body" style="padding:0">
+            <table id="tabla-etapas">
+              <thead><tr><th>Etapa</th><th>Cantidad</th><th>%</th><th>Progreso</th></tr></thead>
+              <tbody id="tbody-etapas"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card fade-in" style="animation-delay:0.1s">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+              Clientes por Fuente
+            </span>
+          </div>
+          <div class="card-body" style="padding:0">
+            <table id="tabla-fuentes">
+              <thead><tr><th>Fuente</th><th>Clientes</th><th>%</th></tr></thead>
+              <tbody id="tbody-fuentes"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script type="module">
+import '/assets/js/nav.js';
+import { kpisApi } from '/assets/js/api.js';
+import { formatNumber, formatPercent } from '/assets/js/utils.js';
+
+const KPI_ICONS = {
+  users:  `<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  leads:  `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`,
+  conv:   `<svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
+  tiempo: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  ref:    `<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>`,
+  activo: `<svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`,
+};
+
+async function load() {
+  try {
+    const data = await kpisApi.clientes();
+    const kpis = [
+      { label:'Total Clientes',        value: formatNumber(data.total_clientes),   icon:'users', color:'var(--c-info)',   colorBg:'var(--c-info-bg)' },
+      { label:'Leads Activos',          value: formatNumber(data.leads_activos),    icon:'leads', color:'var(--c-ok)',     colorBg:'var(--c-ok-bg)' },
+      { label:'Tasa de Conversión',     value: formatPercent(data.tasa_conversion), icon:'conv',  color:'var(--c-accent)', colorBg:'var(--c-accent-muted)' },
+      { label:'Tiempo Prom. de Cierre', value: `${data.tiempo_promedio_cierre||'—'} días`, icon:'tiempo', color:'var(--c-warn)', colorBg:'var(--c-warn-bg)' },
+      { label:'Clientes por Referido',  value: formatPercent(data.pct_referidos),   icon:'ref',   color:'var(--c-info)',   colorBg:'var(--c-info-bg)' },
+      { label:'Leads Esta Semana',      value: formatNumber(data.leads_semana),     icon:'activo',color:'var(--c-ok)',     colorBg:'var(--c-ok-bg)' },
+    ];
+    document.getElementById('kpi-grid').innerHTML = kpis.map(k => `
+      <div class="kpi-card" style="--kpi-color:${k.color};--kpi-color-bg:${k.colorBg}">
+        <div class="kpi-top"><div class="kpi-icon">${KPI_ICONS[k.icon]}</div></div>
+        <div class="kpi-value">${k.value}</div>
+        <div class="kpi-label">${k.label}</div>
+      </div>
+    `).join('');
+
+    // Leads por etapa
+    const etapas = data.leads_por_etapa || [];
+    const totalLeads = etapas.reduce((s, e) => s + e.cantidad, 0) || 1;
+    const ETAPA_LABELS = { nuevo:'Nuevo', contactado:'Contactado', interesado:'Interesado', cotizacion:'Cotización', negociacion:'Negociación', cerrado:'Cerrado ✓', perdido:'Perdido' };
+    document.getElementById('tbody-etapas').innerHTML = etapas.map(e => `
+      <tr>
+        <td>${ETAPA_LABELS[e.etapa] || e.etapa}</td>
+        <td><strong>${formatNumber(e.cantidad)}</strong></td>
+        <td class="muted">${formatPercent(e.cantidad/totalLeads*100)}</td>
+        <td><div class="score-bar"><div class="score-fill" style="width:${(e.cantidad/totalLeads*100).toFixed(1)}%"></div></div></td>
+      </tr>
+    `).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--c-text-2);padding:20px">Sin datos</td></tr>`;
+
+    // Fuentes
+    const fuentes = data.clientes_por_fuente || [];
+    const totalClientes = fuentes.reduce((s, f) => s + f.cantidad, 0) || 1;
+    document.getElementById('tbody-fuentes').innerHTML = fuentes.map(f => `
+      <tr>
+        <td>${f.fuente || 'Sin especificar'}</td>
+        <td><strong>${formatNumber(f.cantidad)}</strong></td>
+        <td class="muted">${formatPercent(f.cantidad/totalClientes*100)}</td>
+      </tr>
+    `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--c-text-2);padding:20px">Sin datos</td></tr>`;
+
+  } catch {
+    document.getElementById('kpi-grid').innerHTML = `<div style="grid-column:1/-1;color:var(--c-text-2);padding:20px">Sin conexión al servidor.</div>`;
+  }
+}
+
+document.getElementById('btn-refresh').addEventListener('click', load);
+load();
+</script>
+</body>
+</html>

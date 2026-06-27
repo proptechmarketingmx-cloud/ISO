@@ -1,0 +1,179 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CNA Asesores â€” Resumen â€” ISO</title>
+  <link rel="stylesheet" href="/assets/css/estilo.css"/>
+</head>
+<body>
+<div class="app-layout" id="app">
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">CNA Asesores</span>
+        <span class="topbar-subtitle">Customer Network Analysis â€” Resumen</span>
+      </div>
+    </header>
+    <main class="page-inner fade-in">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-header-title">CNA â€” Clientes</h1>
+          <p class="page-header-sub">AnÃ¡lisis de red de relaciones entre clientes</p>
+        </div>
+        <div class="page-header-right">
+          <div class="tabs" style="background:var(--c-surface-2)">
+            <a href="/cna_asesores/" class="tab active">Resumen</a>
+            <a href="/cna_asesores/network.html" class="tab">Red</a>
+            <a href="/cna_asesores/rankings.html" class="tab">Rankings</a>
+            <a href="/cna_asesores/communities.html" class="tab">Comunidades</a>
+            <a href="/cna_asesores/influence.html" class="tab">Influence</a>
+            <a href="/cna_asesores/provider.html" class="tab">Provider</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs CNA -->
+      <div class="kpi-grid stagger" id="cna-kpis">
+        <div class="kpi-card"><div class="skeleton" style="height:90px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:90px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:90px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:90px"></div></div>
+      </div>
+
+      <div class="grid-2" style="margin-top:0">
+        <!-- Top Influence -->
+        <div class="card fade-in">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Top 5 Influence Score
+            </span>
+            <a href="/cna_asesores/influence.html" class="btn btn-ghost btn-sm">Ver todos</a>
+          </div>
+          <div class="card-body" style="padding:14px">
+            <div class="rank-list" id="top-influence"></div>
+          </div>
+        </div>
+
+        <!-- Top Provider -->
+        <div class="card fade-in" style="animation-delay:0.1s">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              Top 5 Provider Score
+            </span>
+            <a href="/cna_asesores/provider.html" class="btn btn-ghost btn-sm">Ver todos</a>
+          </div>
+          <div class="card-body" style="padding:14px">
+            <div class="rank-list" id="top-provider"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick links -->
+      <div style="margin-top:20px">
+        <p class="section-title">MÃ³dulos CNA</p>
+        <div class="kpi-grid">
+          <a href="/cna_asesores/network.html" class="kpi-card" style="--kpi-color:var(--c-accent);--kpi-color-bg:var(--c-accent-muted);text-decoration:none;cursor:pointer">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+            <div class="kpi-value" style="font-size:var(--ts-lg)">Red</div>
+            <div class="kpi-label">VisualizaciÃ³n del grafo D3.js</div>
+          </a>
+          <a href="/cna_asesores/rankings.html" class="kpi-card" style="--kpi-color:var(--c-ok);--kpi-color-bg:var(--c-ok-bg);text-decoration:none;cursor:pointer">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+            <div class="kpi-value" style="font-size:var(--ts-lg)">Rankings</div>
+            <div class="kpi-label">Top referidores y volumen</div>
+          </a>
+          <a href="/cna_asesores/communities.html" class="kpi-card" style="--kpi-color:var(--c-info);--kpi-color-bg:var(--c-info-bg);text-decoration:none;cursor:pointer">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div class="kpi-value" style="font-size:var(--ts-lg)">Comunidades</div>
+            <div class="kpi-label">Clusters familiares y profesionales</div>
+          </a>
+          <a href="/cna_asesores/influence.html" class="kpi-card" style="--kpi-color:var(--c-warn);--kpi-color-bg:var(--c-warn-bg);text-decoration:none;cursor:pointer">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+            <div class="kpi-value" style="font-size:var(--ts-lg)">Influence</div>
+            <div class="kpi-label">Score de influencia por cliente</div>
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script type="module">
+import '/assets/js/nav.js';
+import { cnaApi } from '/assets/js/api.js';
+import { formatNumber, formatCurrency, getInfluenceLevel, getProviderLevel } from '/assets/js/utils.js';
+
+async function load() {
+  try {
+    const [scores, rankings] = await Promise.all([
+      cnaApi.asesoresScores(),
+      cnaApi.asesoresRankings(),
+    ]);
+
+    // KPIs
+    const total  = scores.length || 0;
+    const conex  = scores.reduce((s, c) => s + (c.conexiones||0), 0);
+    const avgInf = total ? (scores.reduce((s,c) => s + (c.influence_score||0), 0) / total) : 0;
+    const avgPro = total ? (scores.reduce((s,c) => s + (c.provider_score||0), 0)  / total) : 0;
+    const lideres= scores.filter(c => (c.influence_score||0) >= 81).length;
+
+    document.getElementById('cna-kpis').innerHTML = `
+      <div class="kpi-card" style="--kpi-color:var(--c-accent);--kpi-color-bg:var(--c-accent-muted)">
+        <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div></div>
+        <div class="kpi-value">${formatNumber(conex)}</div>
+        <div class="kpi-label">Conexiones totales</div>
+      </div>
+      <div class="kpi-card" style="--kpi-color:var(--c-warn);--kpi-color-bg:var(--c-warn-bg)">
+        <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div></div>
+        <div class="kpi-value">${avgInf.toFixed(1)}</div>
+        <div class="kpi-label">Influence Score promedio</div>
+      </div>
+      <div class="kpi-card" style="--kpi-color:var(--c-ok);--kpi-color-bg:var(--c-ok-bg)">
+        <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div></div>
+        <div class="kpi-value">${avgPro.toFixed(1)}</div>
+        <div class="kpi-label">Provider Score promedio</div>
+      </div>
+      <div class="kpi-card" style="--kpi-color:var(--c-accent);--kpi-color-bg:var(--c-accent-muted)">
+        <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div></div>
+        <div class="kpi-value">${formatNumber(lideres)}</div>
+        <div class="kpi-label">LÃ­deres de red</div>
+      </div>
+    `;
+
+    const pos = ['gold','silver','bronze'];
+    const renderRank = (list, container) => {
+      if (!list || !list.length) {
+        document.getElementById(container).innerHTML = `<div class="empty-state"><p>Sin datos</p></div>`;
+        return;
+      }
+      document.getElementById(container).innerHTML = list.slice(0,5).map((c, i) => `
+        <div class="rank-item">
+          <span class="rank-pos ${pos[i]||''}">${i+1}</span>
+          <div class="rank-info">
+            <div class="rank-name">${c.nombre} ${c.apellido_paterno||''}</div>
+            <div class="rank-sub">${c.referencias_totales||0} referencias Â· ${c.conexiones||0} conexiones</div>
+          </div>
+          <div class="rank-value">
+            <div class="rank-val-main">${(c.influence_score||0).toFixed(1)}</div>
+            <div class="rank-val-sub">score</div>
+          </div>
+        </div>
+      `).join('');
+    };
+
+    renderRank(rankings.influence_score, 'top-influence');
+    renderRank(rankings.provider_score,  'top-provider');
+
+  } catch {
+    document.getElementById('cna-kpis').innerHTML = `<div style="grid-column:1/-1;color:var(--c-text-2);padding:20px">Sin conexiÃ³n al servidor.</div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>
+

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="ISO — Panel principal de gestión inmobiliaria"/>
+  <title>Dashboard — ISO Plataforma Inmobiliaria</title>
+  <link rel="stylesheet" href="/assets/css/estilo.css"/>
+</head>
+<body>
+<div class="app-layout" id="app">
+
+  <!-- Sidebar se inyecta por nav.js -->
+
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">Dashboard</span>
+        <span class="topbar-subtitle" id="topbar-date">—</span>
+      </div>
+      <div class="topbar-right">
+        <button class="topbar-btn" title="Actualizar" id="btn-refresh">
+          <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="page-inner fade-in">
+
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-header-title">Panel Principal</h1>
+          <p class="page-header-sub">Resumen general de la plataforma inmobiliaria</p>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid stagger" id="kpi-grid">
+        <!-- Se renderizan por JS -->
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+        <div class="kpi-card"><div class="skeleton" style="height:100px"></div></div>
+      </div>
+
+      <!-- Grid principal -->
+      <div class="grid-2-1" style="margin-top:0; gap:20px">
+
+        <!-- Actividad reciente -->
+        <div class="card fade-in" style="animation-delay:0.15s">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Actividad Reciente
+            </span>
+            <div class="tabs" style="background:var(--c-surface-2)">
+              <span class="tab active" data-tab="leads">Leads</span>
+              <span class="tab" data-tab="clientes">Clientes</span>
+              <span class="tab" data-tab="propiedades">Propiedades</span>
+            </div>
+          </div>
+          <div class="card-body" id="activity-container" style="padding:0">
+            <div class="empty-state" id="activity-empty" style="display:none">
+              <svg class="empty-icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <p>Sin actividad reciente</p>
+            </div>
+            <table id="activity-table" style="display:none">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="activity-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Top Clientes CNA -->
+        <div class="card fade-in" style="animation-delay:0.25s">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Top Clientes CNA
+            </span>
+          </div>
+          <div class="card-body" style="padding:14px">
+            <div id="top-cna-list">
+              <div class="rank-list">
+                <div class="rank-item"><div class="skeleton" style="height:48px;width:100%"></div></div>
+                <div class="rank-item"><div class="skeleton" style="height:48px;width:100%"></div></div>
+                <div class="rank-item"><div class="skeleton" style="height:48px;width:100%"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <a href="/cna_clientes/rankings.html" class="btn btn-ghost btn-sm">
+              <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              Ver rankings completos
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Accesos rápidos -->
+      <div style="margin-top:20px">
+        <p class="section-title">Accesos Rápidos</p>
+        <div class="kpi-grid stagger">
+
+          <a href="/clientes/" class="kpi-card" style="--kpi-color:var(--c-info);--kpi-color-bg:var(--c-info-bg); cursor:pointer; text-decoration:none">
+            <div class="kpi-top">
+              <div class="kpi-icon">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+            </div>
+            <div class="kpi-value" style="font-size:var(--ts-lg)">Clientes</div>
+            <div class="kpi-label">Gestión de clientes</div>
+          </a>
+
+          <a href="/leads/" class="kpi-card" style="--kpi-color:var(--c-ok);--kpi-color-bg:var(--c-ok-bg); cursor:pointer; text-decoration:none">
+            <div class="kpi-top">
+              <div class="kpi-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+            </div>
+            <div class="kpi-value" style="font-size:var(--ts-lg)">Leads</div>
+            <div class="kpi-label">Pipeline de prospectos</div>
+          </a>
+
+          <a href="/propiedades/" class="kpi-card" style="--kpi-color:var(--c-warn);--kpi-color-bg:var(--c-warn-bg); cursor:pointer; text-decoration:none">
+            <div class="kpi-top">
+              <div class="kpi-icon">
+                <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+            </div>
+            <div class="kpi-value" style="font-size:var(--ts-lg)">Propiedades</div>
+            <div class="kpi-label">Catálogo de inmuebles</div>
+          </a>
+
+          <a href="/cna_clientes/" class="kpi-card" style="--kpi-color:var(--c-accent);--kpi-color-bg:var(--c-accent-muted); cursor:pointer; text-decoration:none">
+            <div class="kpi-top">
+              <div class="kpi-icon">
+                <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              </div>
+            </div>
+            <div class="kpi-value" style="font-size:var(--ts-lg)">CNA</div>
+            <div class="kpi-label">Red de clientes</div>
+          </a>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script type="module">
+import '/assets/js/nav.js';
+import { dashboardApi, cnaApi } from '/assets/js/api.js';
+import { formatNumber, formatCurrency, formatDate } from '/assets/js/utils.js';
+
+// ── Fecha topbar ──────────────────────────────────
+document.getElementById('topbar-date').textContent =
+  new Intl.DateTimeFormat('es-MX', { weekday:'long', day:'numeric', month:'long', year:'numeric' }).format(new Date());
+
+// ── KPI cards ─────────────────────────────────────
+const KPI_DEFS = [
+  { key:'total_clientes',    label:'Clientes',      icon:'users',     color:'var(--c-info)',   colorBg:'var(--c-info-bg)' },
+  { key:'total_leads',       label:'Leads Activos', icon:'target',    color:'var(--c-ok)',     colorBg:'var(--c-ok-bg)' },
+  { key:'total_propiedades', label:'Propiedades',   icon:'home',      color:'var(--c-warn)',   colorBg:'var(--c-warn-bg)' },
+  { key:'total_asesores',    label:'Asesores',      icon:'briefcase', color:'var(--c-accent)', colorBg:'var(--c-accent-muted)' },
+];
+
+const ICONS = {
+  users: `<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  target: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`,
+  home: `<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+  briefcase: `<svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`,
+};
+
+async function loadKPIs() {
+  const grid = document.getElementById('kpi-grid');
+  try {
+    const data = await dashboardApi.summary();
+    grid.innerHTML = KPI_DEFS.map(k => `
+      <div class="kpi-card" style="--kpi-color:${k.color};--kpi-color-bg:${k.colorBg}">
+        <div class="kpi-top">
+          <div class="kpi-icon">${ICONS[k.icon]}</div>
+        </div>
+        <div class="kpi-value">${formatNumber(data[k.key] ?? 0)}</div>
+        <div class="kpi-label">${k.label}</div>
+      </div>
+    `).join('');
+  } catch {
+    grid.innerHTML = KPI_DEFS.map(k => `
+      <div class="kpi-card" style="--kpi-color:${k.color};--kpi-color-bg:${k.colorBg}">
+        <div class="kpi-top"><div class="kpi-icon">${ICONS[k.icon]}</div></div>
+        <div class="kpi-value">—</div>
+        <div class="kpi-label">${k.label}</div>
+      </div>
+    `).join('');
+  }
+}
+
+// ── Top CNA ───────────────────────────────────────
+async function loadTopCNA() {
+  const container = document.getElementById('top-cna-list');
+  try {
+    const data = await cnaApi.clientesRankings();
+    const top = (data.provider_score || []).slice(0, 5);
+    if (!top.length) {
+      container.innerHTML = `<div class="empty-state"><p>Sin datos CNA</p></div>`;
+      return;
+    }
+    const pos = ['gold', 'silver', 'bronze'];
+    container.innerHTML = `<div class="rank-list">` +
+      top.map((c, i) => `
+        <div class="rank-item">
+          <span class="rank-pos ${pos[i] || ''}">${i + 1}</span>
+          <div class="rank-info">
+            <div class="rank-name">${c.nombre} ${c.apellido_paterno || ''}</div>
+            <div class="rank-sub">${c.referencias_totales ?? 0} referencias</div>
+          </div>
+          <div class="rank-value">
+            <div class="rank-val-main">${(c.provider_score ?? 0).toFixed(1)}</div>
+            <div class="rank-val-sub">score</div>
+          </div>
+        </div>
+      `).join('') +
+    `</div>`;
+  } catch {
+    container.innerHTML = `<div class="empty-state"><p>Sin datos disponibles</p></div>`;
+  }
+}
+
+// ── Refresh ───────────────────────────────────────
+document.getElementById('btn-refresh').addEventListener('click', () => {
+  loadKPIs(); loadTopCNA();
+});
+
+// ── Init ──────────────────────────────────────────
+loadKPIs();
+loadTopCNA();
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CNA Clientes — Rankings — ISO</title>
+  <link rel="stylesheet" href="/assets/css/estilo.css"/>
+</head>
+<body>
+<div class="app-layout" id="app">
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">CNA — Rankings</span>
+        <span class="topbar-subtitle">Top clientes por métricas de red</span>
+      </div>
+    </header>
+    <main class="page-inner fade-in">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-header-title">Rankings</h1>
+          <p class="page-header-sub">Clasificación de clientes por influencia, volumen y score</p>
+        </div>
+        <div class="page-header-right">
+          <div class="tabs" style="background:var(--c-surface-2)">
+            <a href="/cna_clientes/" class="tab">Resumen</a>
+            <a href="/cna_clientes/network.html" class="tab">Red</a>
+            <a href="/cna_clientes/rankings.html" class="tab active">Rankings</a>
+            <a href="/cna_clientes/communities.html" class="tab">Comunidades</a>
+            <a href="/cna_clientes/influence.html" class="tab">Influence</a>
+            <a href="/cna_clientes/provider.html" class="tab">Provider</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-3" id="rankings-grid">
+        <!-- Se renderizan por JS -->
+        <div class="card"><div class="card-body"><div class="skeleton" style="height:300px"></div></div></div>
+        <div class="card"><div class="card-body"><div class="skeleton" style="height:300px"></div></div></div>
+        <div class="card"><div class="card-body"><div class="skeleton" style="height:300px"></div></div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script type="module">
+import '/assets/js/nav.js';
+import { cnaApi } from '/assets/js/api.js';
+import { formatNumber, formatCurrency, getInfluenceLevel, getProviderLevel } from '/assets/js/utils.js';
+
+async function load() {
+  const grid = document.getElementById('rankings-grid');
+  try {
+    const data = await cnaApi.clientesRankings();
+    const pos  = ['gold','silver','bronze'];
+
+    const buildRanking = (title, icon, list, valueKey, valueFmt, subKey) => {
+      if (!list || !list.length) {
+        return `<div class="card">
+          <div class="card-header"><span class="card-title">${icon}${title}</span></div>
+          <div class="card-body"><div class="empty-state"><p>Sin datos</p></div></div>
+        </div>`;
+      }
+      const items = list.slice(0, 10).map((c, i) => `
+        <div class="rank-item">
+          <span class="rank-pos ${pos[i]||''}">${i+1}</span>
+          <div class="rank-info">
+            <div class="rank-name">${c.nombre} ${c.apellido_paterno||''}</div>
+            ${subKey ? `<div class="rank-sub">${subKey(c)}</div>` : ''}
+          </div>
+          <div class="rank-value">
+            <div class="rank-val-main">${valueFmt(c[valueKey])}</div>
+          </div>
+        </div>
+      `).join('');
+      return `<div class="card">
+        <div class="card-header">
+          <span class="card-title">${icon}${title}</span>
+          <span class="badge badge-muted">${list.length} clientes</span>
+        </div>
+        <div class="card-body" style="padding:14px">
+          <div class="rank-list">${items}</div>
+        </div>
+      </div>`;
+    };
+
+    const iconRefs = `<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>`;
+    const iconVol  = `<svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>`;
+    const iconScore= `<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+
+    grid.innerHTML =
+      buildRanking('Top Referidores', iconRefs, data.referencias_totales, 'referencias_totales',
+        v => formatNumber(v), c => `Conversión: ${(c.conversion||0).toFixed(1)}%`) +
+      buildRanking('Top Volumen Generado', iconVol, data.volumen_generado, 'volumen_generado',
+        v => formatCurrency(v, 0), c => `Comisión: ${formatCurrency(c.comision_generada, 0)}`) +
+      buildRanking('Top Provider Score', iconScore, data.provider_score, 'provider_score',
+        v => v !== undefined ? v.toFixed(1) : '—', c => getProviderLevel(c.provider_score).label);
+
+  } catch {
+    grid.innerHTML = `<div style="grid-column:1/-1;color:var(--c-text-2);padding:20px">Sin conexión al servidor.</div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>
