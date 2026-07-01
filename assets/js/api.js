@@ -65,6 +65,8 @@ export const propiedadesApi = {
   create: (data)                 => api.post('/propiedades', data),
   update: (id, data)             => api.put(`/propiedades/${id}`, data),
   remove: (id)                   => api.delete(`/propiedades/${id}`),
+  getMultimedia: (id)            => api.get(`/propiedades/${id}/multimedia`),
+  addMultimedia: (id, data)      => api.post(`/propiedades/${id}/multimedia`, data),
 };
 
 /* ── Asesores ──────────────────────────────────────── */
@@ -98,4 +100,11 @@ export const kpisApi = {
   clientes:    ()                => api.get('/kpis/clientes'),
   propiedades: ()                => api.get('/kpis/propiedades'),
   asesores:    ()                => api.get('/kpis/asesores'),
+  matching:    ()                => api.get('/kpis/matching'),
+};
+
+/* ── Matching / Compatibilidad ─────────────────────── */
+export const matchesApi = {
+  clienteMatches:    (id, limit = 20) => api.get(`/clientes/${id}/matches?limit=${limit}`),
+  propiedadMatches:  (id, limit = 20) => api.get(`/propiedades/${id}/matches?limit=${limit}`),
 };

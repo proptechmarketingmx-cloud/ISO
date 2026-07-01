@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, distinct
 from typing import Dict, Any
 from backend.database import get_db
 from backend.models import models
@@ -179,4 +179,92 @@ def get_kpis_asesores(db: Session = Depends(get_db)):
         "mejor_conversion": mejor_conversion,
         "prom_leads": round(prom_leads, 1),
         "por_asesor": por_asesor
+    }
+
+
+@router.get("/matching")
+def get_kpis_matching(db: Session = Depends(get_db)):
+    """KPIs del motor de compatibilidad CNA (Customer Needs Analysis)."""
+
+    Compat = models.CompatibilidadClientePropiedad
+
+    # 1. Totales generales
+    total_clientes = db.query(models.Cliente).count()
+    total_propiedades = db.query(models.Propiedad).count()
+
+    # 2. Clientes y propiedades que ya tienen al menos un cálculo
+    clientes_analizados = db.query(func.count(distinct(Compat.id_cliente))).scalar() or 0
+    propiedades_analizadas = db.query(func.count(distinct(Compat.id_propiedad))).scalar() or 0
+
+    # 3. Clientes / propiedades sin ningún match en la tabla
+    clientes_sin_match = total_clientes - clientes_analizados
+    propiedades_sin_match = total_propiedades - propiedades_analizadas
+
+    # 4. Distribución por nivel de score
+    total_registros = db.query(Compat).count()
+    excelentes = db.query(Compat).filter(Compat.score_total >= 95).count()
+    altos      = db.query(Compat).filter(Compat.score_total >= 80, Compat.score_total < 95).count()
+    medios     = db.query(Compat).filter(Compat.score_total >= 70, Compat.score_total < 80).count()
+    bajos      = db.query(Compat).filter(Compat.score_total < 70).count()
+
+    # 5. Compatibilidad promedio global
+    avg_score = db.query(func.avg(Compat.score_total)).scalar()
+    compat_promedio = round(float(avg_score), 2) if avg_score else 0.0
+
+    # 6. Mejor match por dimensión (promedios de factores)
+    avg_geo = db.query(func.avg(Compat.score_geo)).scalar()
+    avg_eco = db.query(func.avg(Compat.score_economico)).scalar()
+    avg_fis = db.query(func.avg(Compat.score_fisico)).scalar()
+    avg_fam = db.query(func.avg(Compat.score_familiar)).scalar()
+    avg_dem = db.query(func.avg(Compat.score_demo)).scalar()
+
+    # 7. Matches por rango de score (para el dashboard)
+    matches_90_plus = db.query(Compat).filter(Compat.score_total >= 90).count()
+    matches_80_90   = db.query(Compat).filter(Compat.score_total >= 80, Compat.score_total < 90).count()
+    matches_70_80   = db.query(Compat).filter(Compat.score_total >= 70, Compat.score_total < 80).count()
+
+    # 8. KPIs de conversión (desde módulo leads)
+    total_leads = db.query(models.Lead).count()
+    leads_cerrados = db.query(models.Lead).filter(models.Lead.etapa == "cerrado").count()
+    conversion_general = round((leads_cerrados / total_leads * 100), 2) if total_leads > 0 else 0.0
+
+    # Tiempo promedio de cierre
+    leads_cerrados_data = db.query(
+        models.Lead.fecha_registro, models.Lead.fecha_actualizacion
+    ).filter(models.Lead.etapa == "cerrado").all()
+    tiempos = []
+    for reg, act in leads_cerrados_data:
+        if reg and act:
+            diff = (act - reg).days
+            tiempos.append(max(diff, 0))
+    tiempo_promedio_cierre = round(sum(tiempos) / len(tiempos), 1) if tiempos else 0.0
+
+    return {
+        # Totales
+        "total_clientes": total_clientes,
+        "total_propiedades": total_propiedades,
+        "clientes_analizados": clientes_analizados,
+        "propiedades_analizadas": propiedades_analizadas,
+        "clientes_sin_match": clientes_sin_match,
+        "propiedades_sin_match": propiedades_sin_match,
+        "total_registros_compat": total_registros,
+        # Distribución por nivel
+        "matches_excelente": excelentes,
+        "matches_alta": altos,
+        "matches_media": medios,
+        "matches_baja": bajos,
+        # Rangos para el dashboard
+        "matches_90_plus": matches_90_plus,
+        "matches_80_90": matches_80_90,
+        "matches_70_80": matches_70_80,
+        # Promedios
+        "compat_promedio": compat_promedio,
+        "promedio_geo": round(float(avg_geo or 0), 2),
+        "promedio_economico": round(float(avg_eco or 0), 2),
+        "promedio_fisico": round(float(avg_fis or 0), 2),
+        "promedio_familiar": round(float(avg_fam or 0), 2),
+        "promedio_demo": round(float(avg_dem or 0), 2),
+        # Conversión
+        "conversion_general": conversion_general,
+        "tiempo_promedio_cierre": tiempo_promedio_cierre,
     }

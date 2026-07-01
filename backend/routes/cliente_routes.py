@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from backend.database import get_db
 from backend.services.cliente_service import ClienteService
+from backend.services.matching_service import matches_para_cliente
+from backend.services.kpis_service import get_kpis_clientes
 from backend.schemas.cliente import (
     ClienteCreate, ClienteUpdate, ClienteResponse, ExpedienteResponse,
     ClienteNotaCreate, ClienteNotaResponse,
@@ -11,6 +13,11 @@ from backend.schemas.cliente import (
 )
 
 router = APIRouter(prefix="/clientes", tags=["Clientes"])
+
+@router.get("/kpis", tags=["KPIs"])
+def get_kpis(db: Session = Depends(get_db)):
+    """KPIs automáticos del módulo de clientes."""
+    return get_kpis_clientes(db)
 
 @router.get("", response_model=List[ClienteResponse])
 def get_clientes(
@@ -75,3 +82,16 @@ def add_documento(id_cliente: int, documento: ClienteDocumentoCreate, db: Sessio
     if not ClienteService.get_cliente_by_id(db, id_cliente):
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return ClienteService.add_documento(db, id_cliente, documento)
+
+# --- Motor de Compatibilidad ---
+
+@router.get("/{id_cliente}/matches")
+def get_matches_cliente(
+    id_cliente: int,
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """Retorna las propiedades más compatibles con el cliente, ordenadas por score."""
+    if not ClienteService.get_cliente_by_id(db, id_cliente):
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    return matches_para_cliente(db, id_cliente, limit=limit)

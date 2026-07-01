@@ -51,6 +51,11 @@ const NAV_CONFIG = [
       { label: 'Provider Score',    href: '/cna_asesores/provider.html' },
     ]
   },
+  {
+    id: 'matching-cna', label: 'Matching CNA',
+    href: '/matching/',
+    icon: `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
+  },
   { type: 'section', label: 'REPORTES' },
   {
     id: 'kpis-clientes', label: 'KPIs Clientes',
@@ -78,6 +83,7 @@ function getCurrentId() {
   if (path.startsWith('/asesores') && !path.startsWith('/cna')) return 'asesores';
   if (path.startsWith('/cna_clientes'))      return 'cna-clientes';
   if (path.startsWith('/cna_asesores'))      return 'cna-asesores';
+  if (path.startsWith('/matching'))          return 'matching-cna';
   if (path.startsWith('/kpis/clientes'))     return 'kpis-clientes';
   if (path.startsWith('/kpis/propiedades'))  return 'kpis-propiedades';
   if (path.startsWith('/kpis/asesores'))     return 'kpis-asesores';

@@ -1,7 +1,10 @@
-from pydantic import BaseModel, EmailStr, Field
+import re
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional, List
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, date
+
+_RE_EMAIL = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
 
 # ── Asesores ────────────────────────────────────────
 
@@ -126,44 +129,171 @@ class ClienteResponse(ClienteBase):
         from_attributes = True
 
 
-# ── Propiedades ─────────────────────────────────────
+# ── Propiedades ─────────────────────────────────────────────────────────────
 
 class PropiedadBase(BaseModel):
-    titulo: str = Field(..., max_length=200)
-    descripcion: Optional[str] = None
-    tipo: str = Field(..., max_length=50) # casa, departamento, terreno, local, oficina, bodega
-    tipo_operacion: str = Field(..., max_length=20) # venta, renta
-    precio: Decimal
-    status: Optional[str] = Field("disponible", max_length=20)
-    ciudad: Optional[str] = Field(None, max_length=100)
-    colonia: Optional[str] = Field(None, max_length=100)
-    m2_construccion: Optional[Decimal] = None
-    m2_terreno: Optional[Decimal] = None
-    recamaras: Optional[int] = 0
-    banos: Optional[Decimal] = Decimal("0.0")
-    id_asesor: Optional[int] = None
+    # General
+    titulo:          str           = Field(..., max_length=200)
+    descripcion:     Optional[str] = None
+    tipo:            str           = Field(..., max_length=50)
+    tipo_operacion:  str           = Field(..., max_length=20)  # venta, renta, preventa
+    status:          Optional[str] = Field("disponible", max_length=20)
+    id_asesor:       Optional[int] = None
+
+    # Propietario
+    propietario_nombre:   Optional[str] = Field(None, max_length=200)
+    propietario_whatsapp: Optional[str] = Field(None, max_length=20)
+
+    # Ubicación jerárquica
+    pais:            Optional[str] = Field("MX",  max_length=100)
+    estado:          Optional[str] = Field(None,  max_length=100)
+    municipio:       Optional[str] = Field(None,  max_length=100)
+    ciudad:          Optional[str] = Field(None,  max_length=100)
+    colonia:         Optional[str] = Field(None,  max_length=100)
+    fraccionamiento: Optional[str] = Field(None,  max_length=100)
+    codigo_postal:   Optional[str] = Field(None,  max_length=10)
+
+    # Comercial
+    precio:              Decimal
+    precio_negociable:   Optional[bool]    = False
+    creditos_aceptados:  Optional[str]     = None  # JSON array
+    comision:            Optional[Decimal] = Field(None, ge=0, le=100)
+    comision_compartida: Optional[Decimal] = Field(None, ge=0, le=100)
+    exclusiva:           Optional[bool]    = False
+    fecha_captacion:     Optional[date]    = None
+    fecha_publicacion:   Optional[date]    = None
+
+    # Física
+    m2_construccion:     Optional[Decimal] = None
+    m2_terreno:          Optional[Decimal] = None
+    frente:              Optional[Decimal] = None
+    fondo:               Optional[Decimal] = None
+    recamaras:           Optional[int]     = 0
+    recamaras_pb:        Optional[int]     = 0
+    banos:               Optional[Decimal] = Decimal("0.0")
+    niveles:             Optional[int]     = 1
+    estacionamientos:    Optional[int]     = 0
+    antiguedad:          Optional[int]     = None
+    orientacion:         Optional[str]     = Field(None, max_length=50)
+    estado_conservacion: Optional[str]     = Field(None, max_length=50)
+    remodelada:          Optional[bool]    = False
+    anio_construccion:   Optional[int]     = None
+
+    # Legal
+    escrituras:             Optional[bool] = False
+    regimen:                Optional[str]  = Field(None, max_length=100)
+    libre_gravamen:         Optional[bool] = False
+    predial:                Optional[bool] = False
+    adeudos:                Optional[bool] = False
+    hipoteca_vigente:       Optional[bool] = False
+    documentacion_completa: Optional[bool] = False
+
+    # Perfil ideal (para matching)
+    ingreso_recomendado: Optional[Decimal] = None
+    tipo_credito_ideal:  Optional[str]     = Field(None, max_length=100)
+    estado_civil_ideal:  Optional[str]     = Field(None, max_length=50)
+    genero_ideal:        Optional[str]     = Field(None, max_length=50)
+    hijos_ideal:         Optional[int]     = None
+    mascotas_ideal:      Optional[int]     = None
+    integrantes_ideal:   Optional[int]     = None
+    ideal_para:          Optional[str]     = None  # JSON array
+    amenidades:          Optional[str]     = None  # JSON array
+    servicios:           Optional[str]     = None  # JSON array
+    uso_suelo:           Optional[str]     = Field(None, max_length=50)
+
+    # Scores
+    score_atractivo:      Optional[Decimal] = None
+    score_compatibilidad: Optional[Decimal] = None
+
 
 class PropiedadCreate(PropiedadBase):
     pass
 
+
 class PropiedadUpdate(BaseModel):
-    titulo: Optional[str] = Field(None, max_length=200)
-    descripcion: Optional[str] = None
-    tipo: Optional[str] = Field(None, max_length=50)
-    tipo_operacion: Optional[str] = Field(None, max_length=20)
-    precio: Optional[Decimal] = None
-    status: Optional[str] = Field(None, max_length=20)
-    ciudad: Optional[str] = Field(None, max_length=100)
-    colonia: Optional[str] = Field(None, max_length=100)
-    m2_construccion: Optional[Decimal] = None
-    m2_terreno: Optional[Decimal] = None
-    recamaras: Optional[int] = None
-    banos: Optional[Decimal] = None
-    id_asesor: Optional[int] = None
+    """Todos los campos opcionales para actualizaciones parciales."""
+    titulo:          Optional[str]     = Field(None, max_length=200)
+    descripcion:     Optional[str]     = None
+    tipo:            Optional[str]     = Field(None, max_length=50)
+    tipo_operacion:  Optional[str]     = Field(None, max_length=20)
+    status:          Optional[str]     = Field(None, max_length=20)
+    id_asesor:       Optional[int]     = None
+    propietario_nombre:   Optional[str] = Field(None, max_length=200)
+    propietario_whatsapp: Optional[str] = Field(None, max_length=20)
+    pais:            Optional[str]     = Field(None, max_length=100)
+    estado:          Optional[str]     = Field(None, max_length=100)
+    municipio:       Optional[str]     = Field(None, max_length=100)
+    ciudad:          Optional[str]     = Field(None, max_length=100)
+    colonia:         Optional[str]     = Field(None, max_length=100)
+    fraccionamiento: Optional[str]     = Field(None, max_length=100)
+    codigo_postal:   Optional[str]     = Field(None, max_length=10)
+    precio:              Optional[Decimal] = None
+    precio_negociable:   Optional[bool]    = None
+    creditos_aceptados:  Optional[str]     = None
+    comision:            Optional[Decimal] = None
+    comision_compartida: Optional[Decimal] = None
+    exclusiva:           Optional[bool]    = None
+    fecha_captacion:     Optional[date]    = None
+    fecha_publicacion:   Optional[date]    = None
+    m2_construccion:     Optional[Decimal] = None
+    m2_terreno:          Optional[Decimal] = None
+    frente:              Optional[Decimal] = None
+    fondo:               Optional[Decimal] = None
+    recamaras:           Optional[int]     = None
+    recamaras_pb:        Optional[int]     = None
+    banos:               Optional[Decimal] = None
+    niveles:             Optional[int]     = None
+    estacionamientos:    Optional[int]     = None
+    antiguedad:          Optional[int]     = None
+    orientacion:         Optional[str]     = Field(None, max_length=50)
+    estado_conservacion: Optional[str]     = Field(None, max_length=50)
+    remodelada:          Optional[bool]    = None
+    anio_construccion:   Optional[int]     = None
+    escrituras:             Optional[bool] = None
+    regimen:                Optional[str]  = Field(None, max_length=100)
+    libre_gravamen:         Optional[bool] = None
+    predial:                Optional[bool] = None
+    adeudos:                Optional[bool] = None
+    hipoteca_vigente:       Optional[bool] = None
+    documentacion_completa: Optional[bool] = None
+    ingreso_recomendado: Optional[Decimal] = None
+    tipo_credito_ideal:  Optional[str]     = Field(None, max_length=100)
+    estado_civil_ideal:  Optional[str]     = Field(None, max_length=50)
+    genero_ideal:        Optional[str]     = Field(None, max_length=50)
+    hijos_ideal:         Optional[int]     = None
+    mascotas_ideal:      Optional[int]     = None
+    integrantes_ideal:   Optional[int]     = None
+    ideal_para:          Optional[str]     = None
+    amenidades:          Optional[str]     = None
+    servicios:           Optional[str]     = None
+    uso_suelo:           Optional[str]     = Field(None, max_length=50)
+
 
 class PropiedadResponse(PropiedadBase):
     id_propiedad: int
     fecha_registro: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# --- Propiedad Multimedia ---
+
+class PropiedadMultimediaBase(BaseModel):
+    tipo: str = Field(..., max_length=20)
+    url: str
+    nombre: Optional[str] = Field(None, max_length=255)
+    descripcion: Optional[str] = Field(None, max_length=500)
+    es_principal: Optional[bool] = False
+    orden: Optional[int] = 0
+
+class PropiedadMultimediaCreate(PropiedadMultimediaBase):
+    pass
+
+class PropiedadMultimediaResponse(PropiedadMultimediaBase):
+    id_media: int
+    id_propiedad: int
+    fecha_subida: datetime
 
     class Config:
         from_attributes = True

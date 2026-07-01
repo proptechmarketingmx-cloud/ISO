@@ -1,23 +1,111 @@
 import logging
+import re
+from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+import sqlalchemy.exc
 from typing import List, Optional, Tuple
+from fastapi import HTTPException, status
 from backend.models.cliente import Cliente, ClienteHistorial, ClienteNota, ClienteDocumento, ClienteActividad
+from backend.models.models import AuditoriaCambios
 from backend.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteNotaCreate, ClienteActividadCreate, ClienteDocumentoCreate
-from backend.services.delete_validations import validate_cliente_delete
 
 logger = logging.getLogger(__name__)
 
+def calcular_campos_automaticos(data: dict):
+    # Calcular edad y generación
+    fnac = data.get("fecha_nacimiento")
+    if fnac:
+        try:
+            # Intentar parsear YYYY-MM-DD
+            birth_date = datetime.strptime(fnac, "%Y-%m-%d")
+            today = datetime.today()
+            edad = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+            data["edad"] = edad
+            
+            year = birth_date.year
+            if year <= 1945:
+                data["generacion"] = "Generación Silenciosa"
+            elif year <= 1964:
+                data["generacion"] = "Baby Boomers"
+            elif year <= 1980:
+                data["generacion"] = "Generación X"
+            elif year <= 1996:
+                data["generacion"] = "Millennials"
+            elif year <= 2012:
+                data["generacion"] = "Generación Z"
+            else:
+                data["generacion"] = "Generación Alfa"
+        except Exception as e:
+            logger.warning(f"Error al calcular edad/generación: {e}")
+
+    # Lada
+    tel = data.get("whatsapp") or data.get("telefono_principal")
+    if tel:
+        tel = tel.strip()
+        if tel.startswith("+"):
+            match = re.match(r"^(\+\d{1,4})", tel)
+            if match:
+                data["lada"] = match.group(1)
+        else:
+            data["lada"] = "+52"  # Por defecto México
+
+
 class ClienteService:
     @staticmethod
-    def _crear_historial(db: Session, id_cliente: int, accion: str, descripcion: str, usuario: str = "Sistema"):
+    def _crear_historial(db: Session, id_cliente: int, accion: str, descripcion: str, campo: Optional[str] = None, valor_anterior: Optional[str] = None, valor_nuevo: Optional[str] = None, usuario: str = "Sistema"):
         historial = ClienteHistorial(
             id_cliente=id_cliente,
             accion=accion,
             descripcion=descripcion,
+            campo=campo,
+            valor_anterior=valor_anterior,
+            valor_nuevo=valor_nuevo,
             usuario=usuario
         )
         db.add(historial)
+        
+        # Registrar también en la tabla global de auditoría
+        auditoria = AuditoriaCambios(
+            tabla="clientes",
+            id_registro=id_cliente,
+            campo=campo or "general",
+            valor_anterior=valor_anterior,
+            valor_nuevo=valor_nuevo,
+            usuario=usuario
+        )
+        db.add(auditoria)
+
+    @staticmethod
+    def check_duplicados(db: Session, email: Optional[str], phone: Optional[str], wa: Optional[str], curp: Optional[str], exclude_id: Optional[int] = None):
+        filters = []
+        if email:
+            filters.append(Cliente.correo == email)
+        if phone:
+            filters.append(Cliente.telefono_principal == phone)
+        if wa:
+            filters.append(Cliente.whatsapp == wa)
+        if curp:
+            filters.append(Cliente.curp == curp)
+            
+        if not filters:
+            return
+            
+        query = db.query(Cliente).filter(or_(*filters))
+        if exclude_id:
+            query = query.filter(Cliente.id_cliente != exclude_id)
+            
+        dupe = query.first()
+        if dupe:
+            reasons = []
+            if email and dupe.correo == email: reasons.append("correo")
+            if phone and dupe.telefono_principal == phone: reasons.append("teléfono")
+            if wa and dupe.whatsapp == wa: reasons.append("whatsapp")
+            if curp and dupe.curp == curp: reasons.append("CURP")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Ya existe un cliente registrado con el mismo: {', '.join(reasons)}."
+            )
 
     @staticmethod
     def get_clientes(db: Session, skip: int = 0, limit: int = 100, search: Optional[str] = None, estado: Optional[str] = None) -> List[Cliente]:
@@ -45,7 +133,21 @@ class ClienteService:
 
     @staticmethod
     def create_cliente(db: Session, cliente_in: ClienteCreate) -> Cliente:
-        db_cliente = Cliente(**cliente_in.model_dump())
+        data = cliente_in.model_dump()
+        
+        # Validar duplicados
+        ClienteService.check_duplicados(
+            db,
+            email=data.get("correo"),
+            phone=data.get("telefono_principal"),
+            wa=data.get("whatsapp"),
+            curp=data.get("curp")
+        )
+        
+        # Calcular campos automáticos
+        calcular_campos_automaticos(data)
+        
+        db_cliente = Cliente(**data)
         db.add(db_cliente)
         db.commit()
         db.refresh(db_cliente)
@@ -67,46 +169,73 @@ class ClienteService:
             return None
             
         update_data = cliente_in.model_dump(exclude_unset=True)
-        estado_previo = db_cliente.estado_cliente
-        asesor_previo = db_cliente.id_asesor
         
+        # Validar duplicados (excluyendo el registro actual)
+        ClienteService.check_duplicados(
+            db,
+            email=update_data.get("correo"),
+            phone=update_data.get("telefono_principal"),
+            wa=update_data.get("whatsapp"),
+            curp=update_data.get("curp"),
+            exclude_id=id_cliente
+        )
+        
+        # Si se modificó la fecha de nacimiento o whatsapp/teléfono, recalcular campos automáticos
+        if "fecha_nacimiento" in update_data or "whatsapp" in update_data or "telefono_principal" in update_data:
+            temp_data = {
+                "fecha_nacimiento": update_data.get("fecha_nacimiento", db_cliente.fecha_nacimiento),
+                "whatsapp": update_data.get("whatsapp", db_cliente.whatsapp),
+                "telefono_principal": update_data.get("telefono_principal", db_cliente.telefono_principal)
+            }
+            calcular_campos_automaticos(temp_data)
+            if "edad" in temp_data: update_data["edad"] = temp_data["edad"]
+            if "generacion" in temp_data: update_data["generacion"] = temp_data["generacion"]
+            if "lada" in temp_data: update_data["lada"] = temp_data["lada"]
+            
+        # Hacer tracking de los cambios para la auditoría
         for key, value in update_data.items():
-            setattr(db_cliente, key, value)
+            prev_value = getattr(db_cliente, key)
+            if prev_value != value:
+                # Evitar reportar Decimal y float como distintos si su valor es numéricamente igual
+                try:
+                    if float(prev_value) == float(value):
+                        continue
+                except (ValueError, TypeError):
+                    pass
+                
+                setattr(db_cliente, key, value)
+                
+                # Registrar cambio de campo en historial
+                ClienteService._crear_historial(
+                    db,
+                    id_cliente=id_cliente,
+                    accion="actualizado",
+                    descripcion=f"Campo '{key}' modificado",
+                    campo=key,
+                    valor_anterior=str(prev_value) if prev_value is not None else None,
+                    valor_nuevo=str(value) if value is not None else None
+                )
             
         db.commit()
         db.refresh(db_cliente)
-        
-        # Validar cambios importantes para el historial
-        if "estado_cliente" in update_data and update_data["estado_cliente"] != estado_previo:
-            ClienteService._crear_historial(
-                db, 
-                id_cliente, 
-                accion="cambio_estado", 
-                descripcion=f"Estado cambiado de {estado_previo} a {db_cliente.estado_cliente}"
-            )
-            
-        if "id_asesor" in update_data and update_data["id_asesor"] != asesor_previo:
-            ClienteService._crear_historial(
-                db, 
-                id_cliente, 
-                accion="cambio_asesor", 
-                descripcion=f"Asesor cambiado de {asesor_previo} a {db_cliente.id_asesor}"
-            )
-            
-        db.commit()
         return db_cliente
 
     @staticmethod
     def delete_cliente(db: Session, id_cliente: int) -> Tuple[bool, Optional[str]]:
-        can_delete, reason = validate_cliente_delete(db, id_cliente)
-        if not can_delete:
-            return False, reason
-
-        db_cliente = ClienteService.get_cliente_by_id(db, id_cliente)
-        db.delete(db_cliente)
-        db.commit()
-        logger.info("Cliente eliminado: id=%s", id_cliente)
-        return True, None
+        try:
+            db_cliente = ClienteService.get_cliente_by_id(db, id_cliente)
+            if not db_cliente:
+                return False, "Cliente no encontrado"
+            
+            db.delete(db_cliente)
+            db.commit()
+            return True, None
+        except sqlalchemy.exc.IntegrityError:
+            db.rollback()
+            return False, "No fue posible eliminar el cliente porque existen registros asociados."
+        except Exception as e:
+            db.rollback()
+            return False, f"Error al eliminar: {str(e)}"
 
     # --- Métodos del Expediente ---
     
@@ -136,3 +265,4 @@ class ClienteService:
         db.commit()
         db.refresh(documento)
         return documento
+
