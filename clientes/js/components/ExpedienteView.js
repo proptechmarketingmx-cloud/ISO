@@ -133,7 +133,20 @@ export class ExpedienteView {
                         ${this.renderCNAResumen()}
                     </div>
                 </div>
-                <!-- Propiedades Compatibles -->
+                <div class="card" style="padding: 24px; margin-top: 24px;">
+                    <h3 style="margin-top: 0; display:flex; align-items:center; gap:8px;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--c-accent)" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 6v6l3 3"/></svg>
+                        Explicación del Score
+                    </h3>
+                    ${this.renderCNAExplanation()}
+                </div>
+                <div class="card" id="cna-recommendations-card" style="padding: 24px; margin-top: 24px;">
+                    <h3 style="margin-top: 0; display:flex; align-items:center; gap:8px;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--c-accent)" stroke-width="2"><path d="M12 20c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8z"/><path d="M9 12l2 2 4-4"/></svg>
+                        Recomendaciones
+                    </h3>
+                    <div id="cna-recommendations-container">${this.renderCNARecommendations([])}</div>
+                </div>
                 <div class="card" style="padding: 24px; margin-top: 24px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                         <h3 style="margin: 0; display:flex; align-items:center; gap:8px;">
@@ -248,6 +261,13 @@ export class ExpedienteView {
         const map = { excelente: 'Excelente', alta: 'Alta', media: 'Media', baja: 'Baja' };
         return map[nivel] || nivel || '—';
     }
+    _nivelLabelFromScore(score) {
+        if (score == null) return '—';
+        if (score >= 95) return 'Excelente';
+        if (score >= 80) return 'Alta';
+        if (score >= 70) return 'Media';
+        return 'Baja';
+    }
     _scoreColor(s) {
         if (s >= 95) return '#22c55e';
         if (s >= 80) return '#60a5fa';
@@ -259,55 +279,125 @@ export class ExpedienteView {
         const c = this.expediente;
         const pmin = c.presupuesto_min != null ? formatCurrency(c.presupuesto_min) : '—';
         const pmax = c.presupuesto_max != null ? formatCurrency(c.presupuesto_max) : '—';
-        const rows = [
-            ['Tipo de propiedad',   c.tipo_propiedad   || '—'],
-            ['Tipo de crédito',     c.tipo_credito     || '—'],
-            ['Presupuesto mínimo',  pmin],
-            ['Presupuesto máximo',  pmax],
-            ['Estado de búsqueda',  c.estado_busqueda  || '—'],
-            ['Ciudad de búsqueda',  c.ciudad_busqueda  || '—'],
-            ['Zona / Fraccionamiento', c.fraccionamiento_colonia || '—'],
-            ['Recámaras deseadas',  c.habitaciones_pa != null ? c.habitaciones_pa : '—'],
-            ['Baños deseados',      c.banos != null ? c.banos : '—'],
-            ['Estacionamientos',    c.estacionamiento != null ? c.estacionamiento : '—'],
-            ['Antigüedad máx.',     c.antiguedad_max != null ? `${c.antiguedad_max} años` : '—'],
-            ['Integrantes del hogar', c.integrantes_hogar != null ? c.integrantes_hogar : '—'],
-            ['Mascotas',            c.mascotas != null ? c.mascotas : '—'],
-            ['Ingreso mensual',     c.ingreso_mensual != null ? formatCurrency(c.ingreso_mensual) : '—'],
-        ];
-        return `<table style="width:100%;font-size:var(--ts-sm);border-collapse:collapse">${
-            rows.map(([k,v]) => `<tr>
-                <td style="padding:6px 0;color:var(--c-text-2);width:55%">${k}</td>
-                <td style="padding:6px 0;font-weight:500;text-align:right">${v}</td>
-            </tr>`).join('')
-        }</table>`;
+        const presupuesto = pmin !== '—' || pmax !== '—' ? `${pmin} - ${pmax}` : '—';
+        const scoreCNA = c.score_cna != null ? `${c.score_cna.toFixed(1)}%` : 'No calculado';
+        const nivelCNA = c.score_cna != null ? this._nivelLabelFromScore(c.score_cna) : '—';
+
+        return `
+          <div style="display:grid;gap:18px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+              ${[
+                ['Score CNA', scoreCNA],
+                ['Nivel CNA', nivelCNA],
+                ['Generación', c.generacion || '—'],
+                ['Tipo de crédito', c.tipo_credito || '—'],
+                ['Presupuesto', presupuesto],
+              ].map(([k,v]) => `<div style="background:var(--c-surface-2);border-radius:10px;padding:12px"><div style="font-size:var(--ts-xs);color:var(--c-text-2);margin-bottom:6px">${k}</div><div style="font-weight:600">${v}</div></div>`).join('')}
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr;gap:24px">
+              <div style="background:var(--c-surface-2);border-radius:12px;padding:18px">
+                <div style="font-weight:700;margin-bottom:12px">Perfil Financiero</div>
+                <table style="width:100%;font-size:var(--ts-sm);border-collapse:collapse">
+                  ${[
+                    ['Ingreso mensual', c.ingreso_mensual != null ? formatCurrency(c.ingreso_mensual) : '—'],
+                    ['Tipo de crédito', c.tipo_credito || '—'],
+                    ['Presupuesto', presupuesto],
+                    ['Enganche disponible', c.enganche_disponible != null ? formatCurrency(c.enganche_disponible) : '—'],
+                    ['Pago mensual objetivo', c.pago_mensual_objetivo != null ? formatCurrency(c.pago_mensual_objetivo) : '—'],
+                  ].map(([k,v]) => `<tr><td style="padding:6px 0;color:var(--c-text-2);width:55%">${k}</td><td style="padding:6px 0;font-weight:500;text-align:right">${v}</td></tr>`).join('')}
+                </table>
+              </div>
+
+              <div style="background:var(--c-surface-2);border-radius:12px;padding:18px">
+                <div style="font-weight:700;margin-bottom:12px">Perfil Familiar & Demográfico</div>
+                <table style="width:100%;font-size:var(--ts-sm);border-collapse:collapse">
+                  ${[
+                    ['Estado Civil', c.estado_civil || '—'],
+                    ['Género', c.genero || '—'],
+                    ['Edad', c.edad != null ? c.edad : '—'],
+                    ['Integrantes del hogar', c.integrantes_hogar != null ? c.integrantes_hogar : '—'],
+                    ['Mascotas', c.mascotas != null ? c.mascotas : '—'],
+                  ].map(([k,v]) => `<tr><td style="padding:6px 0;color:var(--c-text-2);width:55%">${k}</td><td style="padding:6px 0;font-weight:500;text-align:right">${v}</td></tr>`).join('')}
+                </table>
+              </div>
+
+              <div style="background:var(--c-surface-2);border-radius:12px;padding:18px">
+                <div style="font-weight:700;margin-bottom:12px">Necesidad Inmobiliaria</div>
+                <table style="width:100%;font-size:var(--ts-sm);border-collapse:collapse">
+                  ${[
+                    ['Tipo de propiedad', c.tipo_propiedad || '—'],
+                    ['Operación', c.tipo_operacion || '—'],
+                    ['Estado de búsqueda', c.estado_busqueda || '—'],
+                    ['Ciudad de búsqueda', c.ciudad_busqueda || '—'],
+                    ['Fraccionamiento / Zona', c.fraccionamiento_colonia || '—'],
+                    ['Recámaras mínimas', c.habitaciones_pa != null ? c.habitaciones_pa : '—'],
+                    ['Baños mínimos', c.banos != null ? c.banos : '—'],
+                  ].map(([k,v]) => `<tr><td style="padding:6px 0;color:var(--c-text-2);width:55%">${k}</td><td style="padding:6px 0;font-weight:500;text-align:right">${v}</td></tr>`).join('')}
+                </table>
+              </div>
+            </div>
+          </div>`;
     }
 
     renderCNAResumen() {
         const c = this.expediente;
         const presupuesto = c.presupuesto_max != null ? formatCurrency(c.presupuesto_max) : (c.presupuesto_min != null ? formatCurrency(c.presupuesto_min) : '—');
+        const nivel = c.score_cna != null ? this._nivelLabelFromScore(c.score_cna) : '—';
         const items = [
-            { label: 'Presupuesto', value: presupuesto, color: 'var(--c-accent)' },
-            { label: 'Tipo de crédito', value: c.tipo_credito || '—', color: 'var(--c-info)' },
-            { label: 'Propiedad buscada', value: c.tipo_propiedad || '—', color: 'var(--c-ok)' },
-            { label: 'Zona', value: c.ciudad_busqueda || c.estado_busqueda || '—', color: 'var(--c-warn)' },
+            { label: 'Score CNA', value: c.score_cna != null ? `${c.score_cna.toFixed(1)}%` : '—', color: 'var(--c-accent)' },
+            { label: 'Nivel de compatibilidad', value: nivel, color: 'var(--c-ok)' },
+            { label: 'Presupuesto', value: presupuesto, color: 'var(--c-info)' },
+            { label: 'Tipo de crédito', value: c.tipo_credito || '—', color: 'var(--c-warn)' },
+            { label: 'Tipo de propiedad', value: c.tipo_propiedad || '—', color: 'var(--c-primary)' },
+            { label: 'Generación', value: c.generacion || '—', color: 'var(--c-accent)' },
         ];
-        return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${
-            items.map(i => `<div style="background:var(--c-surface-2);border-radius:8px;padding:12px">
-                <div style="font-size:var(--ts-xs);color:var(--c-text-2);margin-bottom:4px">${i.label}</div>
-                <div style="font-weight:600;color:${i.color};font-size:var(--ts-sm)">${i.value}</div>
-            </div>`).join('')
+        return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">${
+            items.map(i => `<div style="background:var(--c-surface-2);border-radius:8px;padding:14px"><div style="font-size:var(--ts-xs);color:var(--c-text-2);margin-bottom:6px">${i.label}</div><div style="font-weight:700;color:${i.color};font-size:var(--ts-sm)">${i.value}</div></div>`).join('')
         }</div>`;
+    }
+
+    renderCNAExplanation() {
+        return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+            ${[
+                ['Excelente', '>= 95%'],
+                ['Alta', '80 - 94.9%'],
+                ['Media', '70 - 79.9%'],
+                ['Baja', '< 70%'],
+            ].map(([label, range]) => `<div style="background:var(--c-surface);border-radius:10px;padding:14px"><div style="font-weight:700;margin-bottom:6px">${label}</div><div style="color:var(--c-text-2);font-size:var(--ts-sm)">${range}</div></div>`).join('')}
+        </div>
+        <p style="margin-top:16px;color:var(--c-text-2);font-size:0.92rem;line-height:1.6">El score de compatibilidad se calcula sobre factores geográficos, económicos, físicos, familiares y demográficos. Utiliza el botón "Desglose" para ver cómo contribuye cada factor al score total de cada propiedad compatible.</p>`;
+    }
+
+    renderCNARecommendations(matches = []) {
+        const c = this.expediente;
+        const suggestions = [];
+        if (c.tipo_credito) suggestions.push(`El cliente prefiere crédito ${c.tipo_credito}.`);
+        if (c.presupuesto_max != null) suggestions.push(`Presupuesto máximo de ${formatCurrency(c.presupuesto_max)}.`);
+        if (c.tipo_propiedad) suggestions.push(`Busca preferentemente propiedades tipo ${c.tipo_propiedad}.`);
+        if (c.estado_busqueda) suggestions.push(`Estado de búsqueda: ${c.estado_busqueda}.`);
+        if (matches.length) {
+            const top = matches[0];
+            if (top.score_total >= 95) suggestions.push('La mejor propiedad coincide casi en su totalidad con el perfil del cliente.');
+            else if (top.score_total >= 80) suggestions.push('Hay buenas opciones compatibles, revisa factores menores como ubicación o precio.');
+            else suggestions.push('No hay coincidencias perfectas; conviene ajustar presupuesto, zona o tipo de propiedad.');
+        } else {
+            suggestions.push('No se encontraron propiedades compatibles actualmente.');
+            suggestions.push('Revisa presupuesto, tipo de propiedad y condiciones de crédito para mejorar la compatibilidad.');
+        }
+        return `<ul style="margin:0;padding-left:18px;line-height:1.8">${suggestions.map(item => `<li>${item}</li>`).join('')}</ul>`;
     }
 
     async loadCNAMatches() {
         const listEl  = this.container.querySelector('#cna-matches-list');
+        const recommendationsEl = this.container.querySelector('#cna-recommendations-container');
         const countEl = this.container.querySelector('#cna-matches-count');
         if (!listEl) return;
         try {
             const matches = await apiFetch(`/api/clientes/${this.expediente.id_cliente}/matches?limit=20`);
             if (!Array.isArray(matches) || !matches.length) {
                 countEl.textContent = '0 resultados';
+                if (recommendationsEl) recommendationsEl.innerHTML = this.renderCNARecommendations([]);
                 listEl.innerHTML = `<div style="text-align:center;padding:32px;color:var(--c-text-2)">
                     <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 12px;opacity:.4"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                     <p>No se encontraron propiedades compatibles con este cliente.</p>
@@ -315,7 +405,7 @@ export class ExpedienteView {
                 return;
             }
             countEl.textContent = `${matches.length} propiedades`;
-            let selectedMatch = null;
+            if (recommendationsEl) recommendationsEl.innerHTML = this.renderCNARecommendations(matches);
             listEl.innerHTML = `
                 <div style="display:flex;flex-direction:column;gap:8px" id="cna-match-cards">${
                     matches.map((m, i) => {
@@ -348,7 +438,7 @@ export class ExpedienteView {
             // Bind desglose buttons
             listEl.querySelectorAll('[data-cna-idx]').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const idx = parseInt(btn.dataset.cnzIdx || btn.dataset.cnaIdx);
+                    const idx = parseInt(btn.dataset.cnaIdx, 10);
                     const m = matches[idx];
                     const modalEl = listEl.querySelector('#cna-score-modal');
                     const factores = [
@@ -360,6 +450,7 @@ export class ExpedienteView {
                     ];
                     const scoreColor = this._scoreColor(m.score_total || 0);
                     const nivelLabel = this._nivelLabel(m.nivel);
+                    if (!modalEl) return;
                     modalEl.style.display = 'block';
                     modalEl.innerHTML = `
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -402,9 +493,20 @@ export class ExpedienteView {
                                 <td style="padding:6px 10px;text-align:right;color:${scoreColor}">${(m.score_total||0).toFixed(2)}</td>
                             </tr></tbody>
                         </table>`;
-                    modalEl.querySelector('#close-cna-modal').addEventListener('click', () => {
+                    const closeBtn = modalEl.querySelector('#close-cna-modal');
+                    if (closeBtn) closeBtn.addEventListener('click', () => {
                         modalEl.style.display = 'none';
                     });
+                });
+            });
+
+            listEl.querySelectorAll('.cna-match-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    if (e.target.closest('[data-cna-idx]')) return;
+                    const target = card.dataset.openTarget;
+                    const matchId = card.dataset.matchId;
+                    if (!target || !matchId) return;
+                    window.location.href = `/propiedades/?id_propiedad=${matchId}`;
                 });
             });
         } catch(e) {

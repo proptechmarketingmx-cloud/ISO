@@ -67,6 +67,7 @@ export const propiedadesApi = {
   remove: (id)                   => api.delete(`/propiedades/${id}`),
   getMultimedia: (id)            => api.get(`/propiedades/${id}/multimedia`),
   addMultimedia: (id, data)      => api.post(`/propiedades/${id}/multimedia`, data),
+  propiedadMatches: (id, limit = 20) => api.get(`/propiedades/${id}/matches?limit=${limit}`),
 };
 
 /* ── Asesores ──────────────────────────────────────── */

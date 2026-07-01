@@ -25,6 +25,8 @@ export function initClientesApp() {
     // Inicializar componentes
     let table, form, expediente;
 
+    const parseQueryParam = (name) => new URLSearchParams(window.location.search).get(name);
+
     const showTable = () => {
         vistaExpediente.style.display = 'none';
         vistaTabla.style.display = 'block';
@@ -95,4 +97,9 @@ export function initClientesApp() {
 
     // Carga inicial
     table.loadData();
+
+    const initialClienteId = parseQueryParam('id_cliente');
+    if (initialClienteId) {
+        showExpediente(Number(initialClienteId));
+    }
 }

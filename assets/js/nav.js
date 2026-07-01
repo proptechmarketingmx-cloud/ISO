@@ -22,6 +22,16 @@ const NAV_CONFIG = [
     icon: `<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`
   },
   {
+    id: 'customer-needs-analysis', label: 'Customer Needs Analysis (CNA)',
+    icon: `<svg viewBox="0 0 24 24"><path d="M6 3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z"/><path d="M9 12h6"/><path d="M12 9v6"/></svg>`,
+    children: [
+      { label: 'Resumen',    href: '/cna/' },
+      { label: 'Clientes',   href: '/cna/clientes/' },
+      { label: 'Propiedades', href: '/cna/propiedades/' },
+      { label: 'Dashboard',  href: '/cna/dashboard/' },
+    ]
+  },
+  {
     id: 'asesores', label: 'Asesores',
     href: '/asesores/',
     icon: `<svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`
@@ -51,11 +61,6 @@ const NAV_CONFIG = [
       { label: 'Provider Score',    href: '/cna_asesores/provider.html' },
     ]
   },
-  {
-    id: 'matching-cna', label: 'Matching CNA',
-    href: '/matching/',
-    icon: `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
-  },
   { type: 'section', label: 'REPORTES' },
   {
     id: 'kpis-clientes', label: 'KPIs Clientes',
@@ -80,10 +85,10 @@ function getCurrentId() {
   if (path.startsWith('/dashboard'))         return 'dashboard';
   if (path.startsWith('/clientes'))          return 'clientes';
   if (path.startsWith('/propiedades'))       return 'propiedades';
-  if (path.startsWith('/asesores') && !path.startsWith('/cna')) return 'asesores';
   if (path.startsWith('/cna_clientes'))      return 'cna-clientes';
   if (path.startsWith('/cna_asesores'))      return 'cna-asesores';
-  if (path.startsWith('/matching'))          return 'matching-cna';
+  if (path.startsWith('/cna') || path.startsWith('/matching')) return 'customer-needs-analysis';
+  if (path.startsWith('/asesores') && !path.startsWith('/cna')) return 'asesores';
   if (path.startsWith('/kpis/clientes'))     return 'kpis-clientes';
   if (path.startsWith('/kpis/propiedades'))  return 'kpis-propiedades';
   if (path.startsWith('/kpis/asesores'))     return 'kpis-asesores';

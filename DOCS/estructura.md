@@ -19,16 +19,16 @@
 │   ├── css/
 │   │   └── estilo.css             → estilos globales
 │   └── js/
-│       ├── api.js                 → cliente HTTP base
-│       ├── nav.js                 → navegación y sidebar
+│       ├── api.js                 → cliente HTTP básico
+│       ├── nav.js                 → navegación y barra lateral
 │       └── utils.js               → utilidades compartidas
 │
-├── index.html                     → entrada principal de la app
+├── index.html                     → entrada principal de la aplicación
 │
 ├── dashboard/
 │   └── index.html                 → panel principal con métricas generales
 │
-├── clientes/                      → gestión de clientes + leads
+├── clientes/                      → gestión de clientes y leads
 │   ├── index.html
 │   └── js/
 │       ├── main.js                → lógica principal del módulo

@@ -437,7 +437,7 @@ export class ClienteForm {
                             </div>
                             <div class="form-group">
                                 <label>Compatibilidad Promedio con Propiedades</label>
-                                <input type="text" class="input" name="score_compatibilidad" readonly style="background:var(--c-surface); color:var(--c-accent); font-weight:600;" placeholder="Se calcula con el motor de matching" />
+                                <input type="text" class="input" name="score_compatibilidad" readonly style="background:var(--c-surface); color:var(--c-accent); font-weight:600;" placeholder="Se calcula internamente con CNA" />
                             </div>
                         </div>
                         <div id="cf-matches-panel" style="margin-top: 24px;">

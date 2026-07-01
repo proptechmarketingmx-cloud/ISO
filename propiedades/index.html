@@ -473,6 +473,65 @@
             <div class="checkbox-grid" id="servicios-container"></div>
           </div>
         </div>
+
+        <div class="card" style="margin-top:24px;padding:18px;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;">
+          <h3 style="margin:0 0 14px;font-size:1rem;">Perfil Objetivo</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+            <div style="background:var(--c-surface);border-radius:10px;padding:12px;">
+              <div style="font-size:var(--ts-xs);color:var(--c-text-2);">Ingreso recomendado</div>
+              <div id="prop-objetivo-ingreso" style="font-weight:700;">—</div>
+            </div>
+            <div style="background:var(--c-surface);border-radius:10px;padding:12px;">
+              <div style="font-size:var(--ts-xs);color:var(--c-text-2);">Tipo de crédito ideal</div>
+              <div id="prop-objetivo-credito" style="font-weight:700;">—</div>
+            </div>
+            <div style="background:var(--c-surface);border-radius:10px;padding:12px;">
+              <div style="font-size:var(--ts-xs);color:var(--c-text-2);">Perfil familiar recomendado</div>
+              <div id="prop-objetivo-familiar" style="font-weight:700;">—</div>
+            </div>
+            <div style="background:var(--c-surface);border-radius:10px;padding:12px;">
+              <div style="font-size:var(--ts-xs);color:var(--c-text-2);">Score atractivo</div>
+              <div id="prop-objetivo-score" style="font-weight:700;">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: CNA MATCHES -->
+      <div class="tab-content" id="tab-cna-matches" style="display:none;">
+        <div class="card" style="padding:18px;margin-bottom:16px;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div>
+              <h3 style="margin:0;font-size:1rem;">Customer Needs Analysis</h3>
+              <p style="margin:6px 0 0;color:var(--c-text-2);font-size:.92rem;">Perfil objetivo, explicación del score y clientes compatibles.</p>
+            </div>
+            <span class="badge badge-muted" id="prop-cna-matches-count">Cargando...</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">
+            <div style="background:var(--c-surface);border-radius:10px;padding:12px;">
+              <div style="font-size:var(--ts-xs);color:var(--c-text-2);">Ingreso recomendado</div>
+              <div id="prop-cna-objetivo-ingreso" style="font-weight:700;">—</div>
+            </div>
+            <div style="background:var(--c-surface);border-radius:10px;padding:12px;">
+              <div style="font-size:var(--ts-xs);color:var(--c-text-2);">Crédito ideal</div>
+              <div id="prop-cna-objetivo-credito" style="font-weight:700;">—</div>
+            </div>
+            <div style="background:var(--c-surface);border-radius:10px;padding:12px;">
+              <div style="font-size:var(--ts-xs);color:var(--c-text-2);">Perfil familiar</div>
+              <div id="prop-cna-objetivo-familiar" style="font-weight:700;">—</div>
+            </div>
+            <div style="background:var(--c-surface);border-radius:10px;padding:12px;">
+              <div style="font-size:var(--ts-xs);color:var(--c-text-2);">Score atractivo</div>
+              <div id="prop-cna-objetivo-score" style="font-weight:700;">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="prop-cna-explanation" style="padding:18px;margin-bottom:16px;border:1px solid var(--c-border);border-radius:14px;background:var(--c-surface-2);"></div>
+        <div class="card" id="prop-cna-recommendations" style="padding:18px;margin-bottom:16px;border:1px solid var(--c-border);border-radius:14px;background:var(--c-surface-2);"></div>
+
+        <div id="prop-cna-matches-list"><div class="skeleton" style="height:220px"></div></div>
+        <div id="prop-cna-score-detail" style="display:none;margin-top:16px;padding:18px;border:1px solid var(--c-border);border-radius:14px;background:var(--c-surface-2);"></div>
       </div>
 
       <!-- TAB: MULTIMEDIA -->
@@ -532,6 +591,7 @@ let allData = [], filtered = [], editId = null, deleteId = null;
 let page = 1; const PAGE_SIZE = 12;
 let currentView = 'grid';
 let tempMultimedia = []; // Guardar multimedia agregado en memoria durante creación/edición
+let _cnaMatchesLoaded = false;
 
 // Inicializar selectores usando el catálogo maestro
 llenarSelect('#f-tipo', CATALOGOS.tiposPropiedad);
@@ -583,8 +643,139 @@ document.querySelectorAll('.modal-tab').forEach(tab => {
     
     tab.classList.add('active');
     document.getElementById(tab.dataset.tab).classList.add('active');
+
+    if (tab.dataset.tab === 'tab-cna-matches') {
+      const propId = editId;
+      if (propId && !_cnaMatchesLoaded) {
+        loadPropertyMatches(propId);
+      }
+    }
   });
 });
+
+async function loadPropertyMatches(propId) {
+  const listEl = document.getElementById('prop-cna-matches-list');
+  const countEl = document.getElementById('prop-cna-matches-count');
+  if (!listEl || !countEl) return;
+  listEl.innerHTML = `<div class="loading-state"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--c-accent)" stroke-width="2" style="animation:spin 1s linear infinite;margin:0 auto"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p style="margin-top:12px">Cargando clientes compatibles...</p></div>`;
+  try {
+    const matches = await propiedadesApi.propiedadMatches(propId, 20);
+    if (!Array.isArray(matches) || !matches.length) {
+      countEl.textContent = '0 clientes';
+      listEl.innerHTML = `<div class="empty-state"><p>No se encontraron clientes compatibles con esta propiedad.</p></div>`;
+      _cnaMatchesLoaded = true;
+      return;
+    }
+
+    countEl.textContent = `${matches.length} clientes`;
+    listEl.innerHTML = matches.map((m, i) => {
+      const color = scoreColor(m.score_total || 0);
+      return `<div class="prop-cna-card" data-open-target="cliente" data-match-id="${m.id_cliente}" style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;background:var(--c-surface-2);border:1px solid var(--c-border);transition:border-color .18s ease,transform .18s ease;cursor:pointer;">
+        <div>
+          <div style="font-weight:600;font-size:var(--ts-sm);margin-bottom:4px">${m.nombre_completo || `Cliente #${m.id_cliente}`}</div>
+          <div style="font-size:var(--ts-xs);color:var(--c-text-2)">Presupuesto: ${m.presupuesto ? formatCurrency(m.presupuesto) : '—'} · Crédito: ${m.tipo_credito || '—'} · ${m.ciudad || '—'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;min-width:56px;padding:4px 10px;border-radius:9999px;font-size:.75rem;font-weight:700;background:${color}22;color:${color}">${(m.score_total||0).toFixed(1)}%</span>
+          <span style="font-size:.72rem;color:var(--c-text-2);">${m.nivel ? m.nivel.charAt(0).toUpperCase()+m.nivel.slice(1) : '—'}</span>
+          <button class="btn btn-ghost btn-sm" data-prop-cna-idx="${i}" style="padding:4px 6px;font-size:var(--ts-xs)">Ver desglose</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    const explanationEl = document.getElementById('prop-cna-explanation');
+    if (explanationEl) explanationEl.innerHTML = renderPropertyCNAExplanation();
+    const recommendationsEl = document.getElementById('prop-cna-recommendations');
+    if (recommendationsEl) recommendationsEl.innerHTML = renderPropertyRecommendations(matches);
+    const scoreDetailEl = document.getElementById('prop-cna-score-detail');
+    if (scoreDetailEl) scoreDetailEl.style.display = 'none';
+
+    listEl.querySelectorAll('[data-prop-cna-idx]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.propCnaIdx, 10);
+        const match = matches[idx];
+        if (!match) return;
+        const scoreDetailEl = document.getElementById('prop-cna-score-detail');
+        if (scoreDetailEl) {
+          scoreDetailEl.innerHTML = renderPropertyScoreDetail(match);
+          scoreDetailEl.style.display = 'block';
+        }
+      });
+    });
+
+    listEl.querySelectorAll('.prop-cna-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('[data-prop-cna-idx]')) return;
+        const target = card.dataset.openTarget;
+        const matchId = card.dataset.matchId;
+        if (!target || !matchId) return;
+        window.location.href = `/clientes/?id_cliente=${matchId}`;
+      });
+    });
+
+    _cnaMatchesLoaded = true;
+  } catch (e) {
+    countEl.textContent = 'Error';
+    listEl.innerHTML = `<div class="empty-state"><p style="color:var(--c-err);">Error al cargar los clientes compatibles: ${e.message}</p></div>`;
+  }
+}
+
+function scoreColor(score) {
+  if (score >= 95) return '#22c55e';
+  if (score >= 80) return '#60a5fa';
+  if (score >= 70) return '#f59e0b';
+  return '#ef4444';
+}
+
+function renderPropertyCNAExplanation() {
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+    ${[
+      ['Excelente', '>= 95%'],
+      ['Alta', '80 - 94.9%'],
+      ['Media', '70 - 79.9%'],
+      ['Baja', '< 70%'],
+    ].map(([label, range]) => `<div style="background:var(--c-surface);border-radius:10px;padding:14px"><div style="font-weight:700;margin-bottom:6px">${label}</div><div style="color:var(--c-text-2);font-size:var(--ts-sm)">${range}</div></div>`).join('')}
+  </div>
+  <p style="margin-top:16px;color:var(--c-text-2);font-size:0.92rem;line-height:1.6">El score de compatibilidad se calcula con factores geográficos, económicos, físicos, familiares y demográficos. Cada propiedad recibe un desglose que explica por qué es compatible o no con el perfil objetivo de la propiedad.</p>`;
+}
+
+function renderPropertyRecommendations(matches = []) {
+  const lines = [];
+  if (matches.length) {
+    const top = matches[0];
+    if (top.score_total >= 95) lines.push('La propiedad tiene clientes compatibles con un score excelente.');
+    else if (top.score_total >= 80) lines.push('La propiedad tiene buenos clientes compatibles, revisa pequeños ajustes en precio o ubicación.');
+    else if (top.score_total >= 70) lines.push('Existen clientes moderadamente compatibles; revisa si conviene ajustar el perfil objetivo.');
+    else lines.push('No hay clientes altamente compatibles; considera flexibilizar presupuesto o prioridad de crédito.');
+    lines.push('Verifica los factores de crédito y ubicación antes de recomendar la propiedad.');
+  } else {
+    lines.push('No se encontraron clientes compatibles actualmente.');
+    lines.push('Revisa el perfil objetivo para ampliar las coincidencias: presupuesto, crédito o zona.');
+  }
+  return `<div><div style="font-weight:700;margin-bottom:10px">Recomendaciones automáticas</div><ul style="margin:0;padding-left:18px;line-height:1.8">${lines.map(text => `<li>${text}</li>`).join('')}</ul></div>`;
+}
+
+function renderPropertyScoreDetail(m) {
+  const factors = [
+    { label: 'Geográfico', val: m.score_geo || 0, color: '#60a5fa' },
+    { label: 'Económico', val: m.score_economico || 0, color: '#22c55e' },
+    { label: 'Físico', val: m.score_fisico || 0, color: '#c9a227' },
+    { label: 'Familiar', val: m.score_familiar || 0, color: '#a78bfa' },
+    { label: 'Demográfico', val: m.score_demo || 0, color: '#f472b6' },
+  ];
+  return `<div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div style="font-weight:700;font-size:1rem">${m.nombre_completo || `Cliente #${m.id_cliente}`}</div>
+        <div style="font-size:var(--ts-sm);color:var(--c-text-2)">Score: ${(m.score_total||0).toFixed(1)}% · Nivel: ${m.nivel ? m.nivel.charAt(0).toUpperCase()+m.nivel.slice(1) : '—'}</div>
+      </div>
+      <span class="badge ${m.score_total >= 95 ? 'badge-success' : m.score_total >= 80 ? 'badge-info' : m.score_total >= 70 ? 'badge-warning' : 'badge-muted'}">${(m.score_total||0).toFixed(1)}%</span>
+    </div>
+    ${factors.map(f => `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:var(--ts-xs);color:var(--c-text-2);margin-bottom:4px"><span>${f.label}</span><span>${f.val.toFixed(1)}%</span></div><div style="height:6px;background:var(--c-surface);border-radius:9999px;overflow:hidden"><div style="height:100%;width:${Math.min(f.val,100)}%;background:${f.color};"></div></div></div>`).join('')}
+    <div style="margin-top:12px;font-size:0.92rem;color:var(--c-text-2)">Estas métricas muestran cómo el cliente coincide con el perfil objetivo de la propiedad en cada factor.</div>
+  </div>`;
+}
 
 // Manejo de Multimedia Local (Agregar a la lista)
 document.getElementById('btn-add-media').addEventListener('click', () => {
@@ -645,6 +836,17 @@ async function loadPropiedades() {
     applyFilters();
   } catch {
     document.getElementById('property-grid').innerHTML = `<p style="color:var(--c-text-2);padding:20px">Sin conexión al servidor.</p>`;
+  }
+}
+
+function getQueryParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+function openPropertyFromQuery() {
+  const propId = Number(getQueryParam('id_propiedad'));
+  if (propId && !Number.isNaN(propId)) {
+    editProp(propId);
   }
 }
 
@@ -816,12 +1018,30 @@ window.editProp = async (id) => {
   }
   renderTempMultimedia();
 
+  // Reset objective summary
+  updatePropertyObjetivoSummary(p);
+
   // Activar primera pestaña
   document.querySelector('.modal-tab[data-tab="tab-general"]').click();
   _cnaMatchesLoaded = false;   // reset lazy flag
 
   openModal('modal-prop');
 };
+
+function updatePropertyObjetivoSummary(prop) {
+  document.getElementById('prop-objetivo-ingreso').textContent = prop.ingreso_recomendado != null ? formatCurrency(prop.ingreso_recomendado) : '—';
+  document.getElementById('prop-objetivo-credito').textContent = prop.tipo_credito_ideal || '—';
+  document.getElementById('prop-objetivo-familiar').textContent = prop.integrantes_ideal != null ? `${prop.integrantes_ideal} integrantes` : '—';
+  document.getElementById('prop-objetivo-score').textContent = prop.score_atractivo != null ? `${prop.score_atractivo.toFixed(1)}%` : '—';
+  const objetivoIngreso = document.getElementById('prop-cna-objetivo-ingreso');
+  const objetivoCredito = document.getElementById('prop-cna-objetivo-credito');
+  const objetivoFamiliar = document.getElementById('prop-cna-objetivo-familiar');
+  const objetivoScore = document.getElementById('prop-cna-objetivo-score');
+  if (objetivoIngreso) objetivoIngreso.textContent = prop.ingreso_recomendado != null ? formatCurrency(prop.ingreso_recomendado) : '—';
+  if (objetivoCredito) objetivoCredito.textContent = prop.tipo_credito_ideal || '—';
+  if (objetivoFamiliar) objetivoFamiliar.textContent = prop.integrantes_ideal != null ? `${prop.integrantes_ideal} integrantes` : '—';
+  if (objetivoScore) objetivoScore.textContent = prop.score_atractivo != null ? `${prop.score_atractivo.toFixed(1)}%` : '—';
+}
 
 document.getElementById('form-prop').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -904,7 +1124,7 @@ document.getElementById('search-input').addEventListener('input', debounce(apply
   document.getElementById(id).addEventListener('change', applyFilters)
 );
 
-loadPropiedades();
+loadPropiedades().then(openPropertyFromQuery);
 </script>
 </body>
 </html>
