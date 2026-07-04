@@ -118,8 +118,8 @@ def _score_economico(c: Cliente, p: Propiedad) -> tuple[float, dict]:
                 puntos += 60
                 detalles["precio_en_presupuesto"] = "✓"
             elif precio < pmin:
-                # propiedad más barata: es positivo para el cliente
-                ratio = precio / pmin if pmin > 0 else 1
+                # Una propiedad por debajo del mínimo también es positiva para el cliente.
+                ratio = min(1.0, (pmin / precio) if precio > 0 else 1.0)
                 puntos += int(60 * ratio)
                 detalles["precio_por_debajo"] = f"{precio:,.0f} < {pmin:,.0f}"
             else:

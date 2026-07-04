@@ -4,6 +4,7 @@ from sqlalchemy import func
 from backend.database import get_db
 from backend.models.cliente import Cliente
 from backend.models.models import Propiedad, Asesor, RelacionCliente, CompatibilidadClientePropiedad
+from backend.services.kpis_service import get_kpis_clientes as get_client_kpis_payload
 import datetime
 
 router = APIRouter(prefix="/kpis", tags=["KPIs"])
@@ -17,40 +18,7 @@ def _clientes_activos_count(db: Session) -> int:
 
 @router.get("/clientes")
 def get_kpis_clientes(db: Session = Depends(get_db)):
-    total_clientes = db.query(Cliente).count()
-    clientes_activos = _clientes_activos_count(db)
-    clientes_cerrados = db.query(Cliente).filter(Cliente.estado_cliente == "cerrado").count()
-    tasa_conversion = round((clientes_cerrados / total_clientes * 100), 2) if total_clientes else 0.0
-
-    referidos_destino = db.query(RelacionCliente.cliente_destino_id).filter(
-        RelacionCliente.tipo_relacion == "REFERENCIA"
-    ).distinct().count()
-    pct_referidos = round((referidos_destino / total_clientes * 100), 2) if total_clientes else 0.0
-
-    hace_una_semana = datetime.datetime.now() - datetime.timedelta(days=7)
-    clientes_semana = db.query(Cliente).filter(Cliente.fecha_registro >= hace_una_semana).count()
-
-    estados_data = db.query(
-        Cliente.estado_cliente,
-        func.count(Cliente.id_cliente).label("cantidad")
-    ).group_by(Cliente.estado_cliente).all()
-    clientes_por_etapa = [{"estado": e.estado_cliente, "cantidad": e.cantidad} for e in estados_data]
-
-    fuentes_data = db.query(
-        Cliente.fuente_lead,
-        func.count(Cliente.id_cliente).label("cantidad")
-    ).filter(Cliente.fuente_lead.isnot(None)).group_by(Cliente.fuente_lead).all()
-    clientes_por_fuente = [{"fuente": f.fuente_lead, "cantidad": f.cantidad} for f in fuentes_data]
-
-    return {
-        "total_clientes": total_clientes,
-        "clientes_activos": clientes_activos,
-        "tasa_conversion": tasa_conversion,
-        "pct_referidos": pct_referidos,
-        "clientes_semana": clientes_semana,
-        "clientes_por_etapa": clientes_por_etapa,
-        "clientes_por_fuente": clientes_por_fuente,
-    }
+    return get_client_kpis_payload(db)
 
 
 @router.get("/propiedades")

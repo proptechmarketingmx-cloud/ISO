@@ -4,7 +4,7 @@ from typing import List, Optional
 from backend.database import get_db
 from backend.services.cliente_service import ClienteService
 from backend.services.matching_service import matches_para_cliente
-from backend.services.kpis_service import get_kpis_clientes
+from backend.services.kpis_service import get_kpis_clientes as get_kpis_clientes_service
 from backend.schemas.cliente import (
     ClienteCreate, ClienteUpdate, ClienteResponse, ExpedienteResponse,
     ClienteNotaCreate, ClienteNotaResponse,
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/clientes", tags=["Clientes"])
 @router.get("/kpis", tags=["KPIs"])
 def get_kpis(db: Session = Depends(get_db)):
     """KPIs automáticos del módulo de clientes."""
-    return get_kpis_clientes(db)
+    return get_kpis_clientes_service(db)
 
 @router.get("", response_model=List[ClienteResponse])
 def get_clientes(

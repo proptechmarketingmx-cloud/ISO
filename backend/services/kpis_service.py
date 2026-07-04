@@ -3,7 +3,7 @@ kpis_service.py — KPIs Automáticos de Clientes y Propiedades
 ISO Plataforma Inmobiliaria
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from typing import Any
 from sqlalchemy.orm import Session
@@ -32,12 +32,44 @@ def _distribution(items: list) -> dict:
 
 def get_kpis_clientes(db: Session) -> dict[str, Any]:
     clientes = db.query(Cliente).all()
-    total    = len(clientes)
+    total = len(clientes)
 
     if total == 0:
-        return {"total": 0, "mensaje": "Sin registros"}
+        return {
+            "total_clientes": 0,
+            "clientes_activos": 0,
+            "leads_activos": 0,
+            "tasa_conversion": 0.0,
+            "pct_referidos": 0.0,
+            "clientes_semana": 0,
+            "leads_semana": 0,
+            "clientes_por_etapa": [],
+            "leads_por_etapa": [],
+            "clientes_por_fuente": [],
+            "tiempo_promedio_cierre": None,
+            "mensaje": "Sin registros",
+        }
 
     ahora = datetime.now(timezone.utc)
+
+    # Resumen ejecutivo
+    clientes_activos = sum(1 for c in clientes if c.estado_cliente not in {"cerrado", "perdido", "cancelado", "inactivo"})
+    clientes_cerrados = sum(1 for c in clientes if c.estado_cliente == "cerrado")
+    tasa_conversion = round((clientes_cerrados / total * 100), 2) if total else 0.0
+
+    referidos_destino = db.query(Cliente).filter(Cliente.referenciado.isnot(None)).count()
+    pct_referidos = round((referidos_destino / total * 100), 2) if total else 0.0
+
+    hace_una_semana = datetime.now() - timedelta(days=7)
+    clientes_semana = db.query(Cliente).filter(Cliente.fecha_registro >= hace_una_semana).count()
+
+    dias_cierre = []
+    for c in clientes:
+        if c.estado_cliente == "cerrado" and c.fecha_registro:
+            fr = c.fecha_registro
+            if fr.tzinfo is None:
+                fr = fr.replace(tzinfo=timezone.utc)
+            dias_cierre.append((ahora - fr).days)
 
     # Presupuesto
     presup_max = [float(c.presupuesto_max) for c in clientes if c.presupuesto_max]
@@ -59,15 +91,15 @@ def get_kpis_clientes(db: Session) -> dict[str, Any]:
             dias_reg.append((ahora - fr).days)
 
     # Distribuciones
-    dist_generacion   = _distribution([c.generacion     for c in clientes])
-    dist_ciudad       = _distribution([c.ciudad_busqueda or c.estado_busqueda for c in clientes])
-    dist_tipo_credito = _distribution([c.tipo_credito   for c in clientes])
-    dist_estado_cli   = _distribution([c.estado_cliente for c in clientes])
-    dist_operacion    = _distribution([c.operacion      for c in clientes])
-    dist_motivacion   = _distribution([c.motivacion     for c in clientes])
-    dist_fuente       = _distribution([c.fuente_lead    for c in clientes])
-    dist_asesor       = _distribution([c.id_asesor      for c in clientes])
-    dist_temporalidad = _distribution([c.temporalidad   for c in clientes])
+    dist_generacion = _distribution([c.generacion for c in clientes])
+    dist_ciudad = _distribution([c.ciudad_busqueda or c.estado_busqueda for c in clientes])
+    dist_tipo_credito = _distribution([c.tipo_credito for c in clientes])
+    dist_estado_cli = _distribution([c.estado_cliente for c in clientes])
+    dist_operacion = _distribution([c.operacion for c in clientes])
+    dist_motivacion = _distribution([c.motivacion for c in clientes])
+    dist_fuente = _distribution([c.fuente_lead for c in clientes])
+    dist_asesor = _distribution([c.id_asesor for c in clientes])
+    dist_temporalidad = _distribution([c.temporalidad for c in clientes])
 
     # Conversión por asesor
     por_asesor: dict[int, dict] = defaultdict(lambda: {"total": 0, "cerrados": 0})
@@ -101,23 +133,41 @@ def get_kpis_clientes(db: Session) -> dict[str, Any]:
         for k, d in por_campana.items()
     }
 
+    estados_data = db.query(Cliente.estado_cliente, func.count(Cliente.id_cliente).label("cantidad")).group_by(Cliente.estado_cliente).all()
+    clientes_por_etapa = [{"estado": e.estado_cliente, "cantidad": e.cantidad} for e in estados_data]
+    leads_por_etapa = [{"etapa": e.estado_cliente, "cantidad": e.cantidad} for e in estados_data]
+
+    fuentes_data = db.query(Cliente.fuente_lead, func.count(Cliente.id_cliente).label("cantidad")).filter(Cliente.fuente_lead.isnot(None)).group_by(Cliente.fuente_lead).all()
+    clientes_por_fuente = [{"fuente": f.fuente_lead, "cantidad": f.cantidad} for f in fuentes_data]
+
     return {
-        "total_clientes":          total,
-        "presupuesto_promedio_max":_safe_avg(presup_max),
-        "presupuesto_promedio_min":_safe_avg(presup_min),
-        "ingreso_promedio":        _safe_avg(ingresos),
-        "edad_promedio":           _safe_avg(edades),
-        "tiempo_promedio_dias_reg":_safe_avg(dias_reg),
+        "total_clientes": total,
+        "clientes_activos": clientes_activos,
+        "leads_activos": clientes_activos,
+        "tasa_conversion": tasa_conversion,
+        "pct_referidos": pct_referidos,
+        "clientes_semana": clientes_semana,
+        "leads_semana": clientes_semana,
+        "clientes_por_etapa": clientes_por_etapa,
+        "leads_por_etapa": leads_por_etapa,
+        "clientes_por_fuente": clientes_por_fuente,
+        "tiempo_promedio_cierre": _safe_avg(dias_cierre),
+        "presupuesto_promedio_max": _safe_avg(presup_max),
+        "presupuesto_promedio_min": _safe_avg(presup_min),
+        "ingreso_promedio": _safe_avg(ingresos),
+        "edad_promedio": _safe_avg(edades),
+        "tiempo_promedio_dias_reg": _safe_avg(dias_reg),
         "distribucion_generacion": dist_generacion,
-        "distribucion_ciudad":     dict(list(dist_ciudad.items())[:15]),
+        "distribucion_ciudad": dict(list(dist_ciudad.items())[:15]),
         "distribucion_tipo_credito": dist_tipo_credito,
         "distribucion_estado_cliente": dist_estado_cli,
-        "distribucion_operacion":  dist_operacion,
+        "distribucion_operacion": dist_operacion,
         "distribucion_motivacion": dist_motivacion,
-        "distribucion_fuente_lead":dist_fuente,
+        "distribucion_fuente_lead": dist_fuente,
         "distribucion_temporalidad": dist_temporalidad,
-        "conversion_por_asesor":   conversion_asesor,
-        "conversion_por_campana":  conversion_campana,
+        "conversion_por_asesor": conversion_asesor,
+        "conversion_por_campana": conversion_campana,
+        "distribucion_asesor": dist_asesor,
     }
 
 

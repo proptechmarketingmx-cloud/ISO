@@ -1,6 +1,6 @@
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 import sqlalchemy.exc
@@ -12,6 +12,48 @@ from backend.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteNotaCre
 from backend.services.delete_validations import validate_cliente_delete
 
 logger = logging.getLogger(__name__)
+
+
+def _values_equivalent(prev_value, value) -> bool:
+    if prev_value == value:
+        return True
+
+    if prev_value is None or value is None:
+        return prev_value is None and value is None
+
+    try:
+        if isinstance(prev_value, (int, float)) and isinstance(value, (int, float)):
+            return float(prev_value) == float(value)
+    except (TypeError, ValueError):
+        pass
+
+    if isinstance(prev_value, str) and isinstance(value, str):
+        prev_text = prev_value.strip()
+        value_text = value.strip()
+        if not prev_text and not value_text:
+            return True
+        try:
+            if float(prev_text) == float(value_text):
+                return True
+        except ValueError:
+            pass
+
+        date_formats = ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y")
+        for prev_fmt in date_formats:
+            try:
+                prev_date = datetime.strptime(prev_text, prev_fmt).date()
+            except ValueError:
+                continue
+            for value_fmt in date_formats:
+                try:
+                    value_date = datetime.strptime(value_text, value_fmt).date()
+                except ValueError:
+                    continue
+                if prev_date == value_date:
+                    return True
+
+    return False
+
 
 def calcular_campos_automaticos(data: dict):
     # Calcular edad y generación
@@ -93,7 +135,7 @@ class ClienteService:
             return
             
         query = db.query(Cliente).filter(or_(*filters))
-        if exclude_id:
+        if exclude_id is not None:
             query = query.filter(Cliente.id_cliente != exclude_id)
             
         dupe = query.first()
@@ -197,13 +239,9 @@ class ClienteService:
         for key, value in update_data.items():
             prev_value = getattr(db_cliente, key)
             if prev_value != value:
-                # Evitar reportar Decimal y float como distintos si su valor es numéricamente igual
-                try:
-                    if float(prev_value) == float(value):
-                        continue
-                except (ValueError, TypeError):
-                    pass
-                
+                if _values_equivalent(prev_value, value):
+                    continue
+
                 setattr(db_cliente, key, value)
                 
                 # Registrar cambio de campo en historial

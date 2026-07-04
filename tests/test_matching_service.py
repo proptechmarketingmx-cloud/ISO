@@ -1,6 +1,7 @@
 from backend.models.cliente import Cliente
 from backend.models.models import Propiedad
-from backend.services.matching_service import _score_familiar, _score_geografico
+from backend.services.matching_service import _score_economico, _score_familiar, _score_geografico
+from backend.services.cliente_service import _values_equivalent
 
 
 def make_cliente(**overrides):
@@ -53,3 +54,18 @@ def test_score_familiar_does_not_reward_pet_unfriendly_property():
 
     assert score == 0.0
     assert details.get("mascotas") == "✗"
+
+
+def test_score_economico_rewards_properties_below_the_minimum_budget():
+    cliente = make_cliente(presupuesto_min=1_000_000, presupuesto_max=2_000_000)
+    propiedad = make_propiedad(precio=500_000)
+
+    score, details = _score_economico(cliente, propiedad)
+
+    assert score == 60.0
+    assert details.get("precio_por_debajo")
+
+
+def test_values_equivalent_normalizes_date_strings():
+    assert _values_equivalent("1990-01-01", "01/01/1990")
+    assert _values_equivalent("10", "10.0")

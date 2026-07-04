@@ -3,12 +3,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-DB_DIALECT = os.getenv("DB_DIALECT", "postgresql")
-DB_USER = os.getenv("DB_USER", "postgres" if DB_DIALECT == "postgresql" else "root")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres" if DB_DIALECT == "postgresql" else "")
+DB_DIALECT = os.getenv("DB_DIALECT", "mysql")
+DB_USER = os.getenv("DB_USER", "root" if DB_DIALECT == "mysql" else "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "" if DB_DIALECT == "mysql" else "postgres")
 DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "5432" if DB_DIALECT == "postgresql" else "3306")
-DB_NAME = os.getenv("DB_NAME", "iso_dev" if DB_DIALECT == "postgresql" else "iso_db")
+DB_PORT = os.getenv("DB_PORT", "3306" if DB_DIALECT == "mysql" else "5432")
+DB_NAME = os.getenv("DB_NAME", "iso_db" if DB_DIALECT == "mysql" else "iso_dev")
 
 if DB_DIALECT == "mysql":
     DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"

@@ -25,7 +25,7 @@ def read_propiedades(
     search: Optional[str] = None,
     tipo: Optional[str] = None,
     tipo_operacion: Optional[str] = None,
-    status: Optional[str] = None,
+    status_filter: Optional[str] = Query(None, alias="status"),
     db: Session = Depends(get_db)
 ):
     query = db.query(models.Propiedad)
@@ -41,8 +41,8 @@ def read_propiedades(
         query = query.filter(models.Propiedad.tipo == tipo)
     if tipo_operacion:
         query = query.filter(models.Propiedad.tipo_operacion == tipo_operacion)
-    if status:
-        query = query.filter(models.Propiedad.status == status)
+    if status_filter:
+        query = query.filter(models.Propiedad.status == status_filter)
         
     return query.offset(skip).limit(limit).all()
 
