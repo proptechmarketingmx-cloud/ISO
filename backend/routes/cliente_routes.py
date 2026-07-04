@@ -94,4 +94,16 @@ def get_matches_cliente(
     """Retorna las propiedades más compatibles con el cliente, ordenadas por score."""
     if not ClienteService.get_cliente_by_id(db, id_cliente):
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
-    return matches_para_cliente(db, id_cliente, limit=limit)
+    return matches_para_cliente(db, id_cliente, limit=limit, persist=False)
+
+
+@router.post("/{id_cliente}/matches")
+def calculate_matches_cliente(
+    id_cliente: int,
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """Calcula y persiste los matches del cliente para la propiedad."""
+    if not ClienteService.get_cliente_by_id(db, id_cliente):
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    return matches_para_cliente(db, id_cliente, limit=limit, persist=True)

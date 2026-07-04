@@ -13,15 +13,13 @@ router = APIRouter(prefix="/cna", tags=["CNA"])
 def calcular_scores_clientes(db: Session) -> List[Dict[str, Any]]:
     clientes = db.query(models.Cliente).all()
     relaciones = db.query(models.RelacionCliente).all()
-    leads = db.query(models.Lead).all()
-    
+
     # 1. Mapeos de relaciones
-    # Adyacencia y tipos de relaciones por cliente
     rel_por_cliente = defaultdict(list)
     refs_directas = defaultdict(int)
     refs_indirectas = defaultdict(int)
     conexiones_count = defaultdict(int)
-    
+
     for r in relaciones:
         rel_por_cliente[r.cliente_origen_id].append(r)
         rel_por_cliente[r.cliente_destino_id].append(r)
@@ -29,14 +27,12 @@ def calcular_scores_clientes(db: Session) -> List[Dict[str, Any]]:
         conexiones_count[r.cliente_destino_id] += 1
         if r.tipo_relacion == "REFERENCIA":
             refs_directas[r.cliente_origen_id] += 1
-            
-    # Calcular referencias indirectas (nivel 2)
-    # Si A refiere a B (A->B es REFERENCIA) y B refiere a C (B->C es REFERENCIA), entonces A tiene una indirecta
+
     referidos_de = defaultdict(list)
     for r in relaciones:
         if r.tipo_relacion == "REFERENCIA":
             referidos_de[r.cliente_origen_id].append(r.cliente_destino_id)
-            
+
     for origen, destinos in referidos_de.items():
         visitados = set(destinos)
         for d in destinos:
@@ -45,26 +41,19 @@ def calcular_scores_clientes(db: Session) -> List[Dict[str, Any]]:
                     refs_indirectas[origen] += 1
                     visitados.add(sub_d)
 
-    # 2. Mapeos de Leads para volumen, comisión y conversión
-    # Un lead exitoso es el que está en etapa 'cerrado'
-    # Agrupamos leads por cliente
-    leads_por_cliente = defaultdict(list)
-    for l in leads:
-        leads_por_cliente[l.id_cliente].append(l)
-        
-    # Agrupamos leads referidos por el cliente origen
-    # Un lead se considera referido por A si el cliente del lead fue referido por A
-    leads_referidos_por = defaultdict(list)
-    # Mapeamos cliente -> quién lo refirió
+    # 2. Métricas de actividad y origen usando los clientes del esquema actual
+    clientes_por_cliente = defaultdict(list)
+    clientes_referidos_por = defaultdict(list)
     referido_por = {}
     for r in relaciones:
         if r.tipo_relacion == "REFERENCIA":
             referido_por[r.cliente_destino_id] = r.cliente_origen_id
-            
-    for l in leads:
-        ref_id = referido_por.get(l.id_cliente)
+
+    for cliente in clientes:
+        clientes_por_cliente[cliente.id_cliente].append(cliente)
+        ref_id = referido_por.get(cliente.id_cliente)
         if ref_id:
-            leads_referidos_por[ref_id].append(l)
+            clientes_referidos_por[ref_id].append(cliente)
 
     # 3. Construir scores por cliente
     scores = []
@@ -80,24 +69,21 @@ def calcular_scores_clientes(db: Session) -> List[Dict[str, Any]]:
         r_ind = refs_indirectas[cid]
         conn = conexiones_count[cid]
         
-        # Leads referidos por este cliente
-        ref_leads = leads_referidos_por[cid]
-        leads_totales_ref = len(ref_leads)
-        leads_cerrados_ref = sum(1 for l in ref_leads if l.etapa == "cerrado")
-        
-        # Conversión del cliente = % de leads referidos que cerraron
+        # Clientes referidos por este cliente
+        ref_clientes = clientes_referidos_por[cid]
+        leads_totales_ref = len(ref_clientes)
+        leads_cerrados_ref = sum(1 for c in ref_clientes if c.estado_cliente == "cerrado")
+
+        # Conversión del cliente = % de clientes referidos cerrados
         conversion = (leads_cerrados_ref / leads_totales_ref * 100) if leads_totales_ref > 0 else 0.0
-        
-        # Volumen y Comisión Generada
-        volumen = sum(float(l.valor_cierre or 0.0) for l in ref_leads if l.etapa == "cerrado")
-        comision = sum(float(l.comision_cierre or 0.0) for l in ref_leads if l.etapa == "cerrado")
-        
-        # Actividad reciente (leads referidos o creados en los últimos 30 días)
+
+        # Volumen y Comisión Generada (se mantienen en 0 porque el esquema actual no tiene esos campos en clientes)
+        volumen = 0.0
+        comision = 0.0
+
+        # Actividad reciente (clientes creados en los últimos 30 días)
         limite_actividad = datetime.datetime.now() - datetime.timedelta(days=30)
-        actividad_reciente = sum(
-            1 for l in (leads_por_cliente[cid] + ref_leads)
-            if l.fecha_registro >= limite_actividad
-        )
+        actividad_reciente = sum(1 for c in clientes_por_cliente[cid] if c.fecha_registro and c.fecha_registro >= limite_actividad)
         
         # Normalizaciones para los scores (0-100)
         # Componentes Influence Score
@@ -286,9 +272,9 @@ def get_clientes_communities(db: Session = Depends(get_db)):
 def calcular_scores_asesores(db: Session) -> List[Dict[str, Any]]:
     asesores = db.query(models.Asesor).all()
     relaciones = db.query(models.RelacionAsesor).all()
-    leads = db.query(models.Lead).all()
+    clientes = db.query(models.Cliente).all()
     propiedades = db.query(models.Propiedad).all()
-    
+
     # 1. Relaciones de asesores
     conexiones_count = defaultdict(int)
     refs_directas = defaultdict(int)
@@ -299,12 +285,12 @@ def calcular_scores_asesores(db: Session) -> List[Dict[str, Any]]:
         if r.tipo_relacion == "REFERENCIA":
             refs_directas[r.asesor_origen_id] += 1
             
-    # 2. Leads por asesor
-    leads_por_asesor = defaultdict(list)
-    for l in leads:
-        if l.id_asesor:
-            leads_por_asesor[l.id_asesor].append(l)
-            
+    # 2. Clientes y propiedades por asesor
+    clientes_por_asesor = defaultdict(list)
+    for cliente in clientes:
+        if cliente.id_asesor:
+            clientes_por_asesor[cliente.id_asesor].append(cliente)
+
     # Propiedades por asesor
     props_por_asesor = defaultdict(list)
     for p in propiedades:
@@ -322,18 +308,18 @@ def calcular_scores_asesores(db: Session) -> List[Dict[str, Any]]:
         r_dir = refs_directas[aid]
         conn = conexiones_count[aid]
         
-        # Leads asignados
-        a_leads = leads_por_asesor[aid]
-        leads_totales = len(a_leads)
-        leads_cerrados = sum(1 for l in a_leads if l.etapa == "cerrado")
-        
-        # Conversión del asesor = leads cerrados / leads asignados
+        # Clientes asignados
+        a_clientes = clientes_por_asesor[aid]
+        leads_totales = len(a_clientes)
+        leads_cerrados = sum(1 for cliente in a_clientes if cliente.estado_cliente == "cerrado")
+
+        # Conversión del asesor = clientes cerrados / clientes asignados
         conversion = (leads_cerrados / leads_totales * 100) if leads_totales > 0 else 0.0
-        
-        # Volumen y Comisión Generada
-        volumen = sum(float(l.valor_cierre or 0.0) for l in a_leads if l.etapa == "cerrado")
-        comision = sum(float(l.comision_cierre or 0.0) for l in a_leads if l.etapa == "cerrado")
-        
+
+        # Volumen y Comisión Generada (no existe equivalencia directa en el esquema actual)
+        volumen = 0.0
+        comision = 0.0
+
         # Propiedades captadas
         total_propiedades = len(props_por_asesor[aid])
         
@@ -346,7 +332,7 @@ def calcular_scores_asesores(db: Session) -> List[Dict[str, Any]]:
         influence_score = min(max(influence_score, 0.0), 100.0)
         
         # Provider Score del asesor (generador de inventario y cierres)
-        max_vol = max([sum(float(l.valor_cierre or 0.0) for l in leads_por_asesor[x.id_asesor] if l.etapa == "cerrado") for x in asesores] or [1.0])
+        max_vol = max([sum(1 for cliente in clientes_por_asesor[x.id_asesor] if cliente.estado_cliente == "cerrado") for x in asesores] or [1.0])
         max_vol = max_vol if max_vol > 0 else 1.0
         comp_vol = (volumen / max_vol * 100)
         

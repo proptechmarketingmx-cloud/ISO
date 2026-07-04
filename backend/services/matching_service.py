@@ -75,14 +75,14 @@ def _score_geografico(c: Cliente, p: Propiedad) -> tuple[float, dict]:
             detalles["estado"] = "✗"
 
     # Municipio
-    mun_c = (c.fraccionamiento_colonia or "").strip().lower()
+    mun_c = (c.municipio or c.fraccionamiento_colonia or "").strip().lower()
     mun_p = (p.municipio or "").strip().lower()
     if mun_p and mun_c and mun_p in mun_c:
         puntos += 25
         detalles["municipio"] = "✓"
 
     # Colonia / Fraccionamiento
-    frac_c = (c.fraccionamiento_colonia or "").strip().lower()
+    frac_c = (c.colonia or c.fraccionamiento or c.fraccionamiento_colonia or "").strip().lower()
     frac_p = (p.fraccionamiento or p.colonia or "").strip().lower()
     if frac_p and frac_c and frac_p in frac_c:
         puntos += 20
@@ -253,16 +253,29 @@ def _score_familiar(c: Cliente, p: Propiedad) -> tuple[float, dict]:
     # Hijos
     if c.hijos is not None and p.hijos_ideal is not None:
         checks += 1
-        if c.hijos <= p.hijos_ideal or p.hijos_ideal == 0:
+        if p.hijos_ideal == 0:
+            if c.hijos == 0:
+                puntos += 1
+                detalles["hijos"] = "✓"
+            else:
+                detalles["hijos"] = "✗"
+        elif c.hijos <= p.hijos_ideal:
             puntos += 1
             detalles["hijos"] = "✓"
+        else:
+            detalles["hijos"] = "✗"
 
     # Mascotas
     if c.mascotas is not None and p.mascotas_ideal is not None:
         checks += 1
-        if c.mascotas == 0 or p.mascotas_ideal > 0:
+        if c.mascotas == 0:
             puntos += 1
             detalles["mascotas"] = "✓"
+        elif p.mascotas_ideal > 0:
+            puntos += 1
+            detalles["mascotas"] = "✓"
+        else:
+            detalles["mascotas"] = "✗"
 
     # Integrantes del hogar
     if c.integrantes_hogar is not None and p.integrantes_ideal is not None:
@@ -372,7 +385,7 @@ def guardar_o_actualizar_compat(db: Session, id_cliente: int, id_propiedad: int,
     return existente
 
 
-def matches_para_cliente(db: Session, id_cliente: int, limit: int = 20) -> list:
+def matches_para_cliente(db: Session, id_cliente: int, limit: int = 20, persist: bool = False) -> list:
     """
     Calcula y devuelve las propiedades más compatibles con un cliente.
     Solo evalúa propiedades disponibles.
@@ -392,17 +405,17 @@ def matches_para_cliente(db: Session, id_cliente: int, limit: int = 20) -> list:
         r["ciudad"]       = p.ciudad
         r["tipo"]         = p.tipo
         resultados.append(r)
-        # Persistir en BD
-        guardar_o_actualizar_compat(db, id_cliente, p.id_propiedad, {
-            k: v for k, v in r.items()
-            if k in ("score_total","score_geo","score_economico","score_fisico","score_familiar","score_demo","nivel","detalle_json")
-        })
+        if persist:
+            guardar_o_actualizar_compat(db, id_cliente, p.id_propiedad, {
+                k: v for k, v in r.items()
+                if k in ("score_total","score_geo","score_economico","score_fisico","score_familiar","score_demo","nivel","detalle_json")
+            })
 
     resultados.sort(key=lambda x: x["score_total"], reverse=True)
     return resultados[:limit]
 
 
-def matches_para_propiedad(db: Session, id_propiedad: int, limit: int = 20) -> list:
+def matches_para_propiedad(db: Session, id_propiedad: int, limit: int = 20, persist: bool = False) -> list:
     """
     Calcula y devuelve los clientes más compatibles con una propiedad.
     """
@@ -419,10 +432,11 @@ def matches_para_propiedad(db: Session, id_propiedad: int, limit: int = 20) -> l
         r["whatsapp"]        = c.whatsapp
         r["correo"]          = c.correo
         resultados.append(r)
-        guardar_o_actualizar_compat(db, c.id_cliente, id_propiedad, {
-            k: v for k, v in r.items()
-            if k in ("score_total","score_geo","score_economico","score_fisico","score_familiar","score_demo","nivel","detalle_json")
-        })
+        if persist:
+            guardar_o_actualizar_compat(db, c.id_cliente, id_propiedad, {
+                k: v for k, v in r.items()
+                if k in ("score_total","score_geo","score_economico","score_fisico","score_familiar","score_demo","nivel","detalle_json")
+            })
 
     resultados.sort(key=lambda x: x["score_total"], reverse=True)
     return resultados[:limit]

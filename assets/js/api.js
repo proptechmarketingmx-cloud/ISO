@@ -1,10 +1,10 @@
 /**
  * ISO Platform — API Client
- * Cliente HTTP centralizado para comunicarse con el backend FastAPI
- * Base URL: http://localhost:8000
+ * Cliente HTTP centralizado para comunicarse con el backend FastAPI.
+ * Usa una ruta relativa para que funcione tanto en desarrollo como en producción.
  */
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = '/api';
 
 async function request(method, path, body = null) {
   const opts = {
@@ -51,11 +51,11 @@ export const clientesApi = {
 
 /* ── Leads ─────────────────────────────────────────── */
 export const leadsApi = {
-  list:   (params = '')          => api.get(`/leads${params}`),
-  get:    (id)                   => api.get(`/leads/${id}`),
-  create: (data)                 => api.post('/leads', data),
-  update: (id, data)             => api.put(`/leads/${id}`, data),
-  remove: (id)                   => api.delete(`/leads/${id}`),
+  list:   ()                    => Promise.reject(new Error('El backend actual no expone un endpoint de leads.')),
+  get:    ()                    => Promise.reject(new Error('El backend actual no expone un endpoint de leads.')),
+  create: ()                    => Promise.reject(new Error('El backend actual no expone un endpoint de leads.')),
+  update: ()                    => Promise.reject(new Error('El backend actual no expone un endpoint de leads.')),
+  remove: ()                    => Promise.reject(new Error('El backend actual no expone un endpoint de leads.')),
 };
 
 /* ── Propiedades ───────────────────────────────────── */

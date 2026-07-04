@@ -125,7 +125,20 @@ def get_matches_propiedad(
     db_prop = db.query(models.Propiedad).filter(models.Propiedad.id_propiedad == id_propiedad).first()
     if not db_prop:
         raise HTTPException(status_code=404, detail="Propiedad no encontrada")
-    return matches_para_propiedad(db, id_propiedad, limit=limit)
+    return matches_para_propiedad(db, id_propiedad, limit=limit, persist=False)
+
+
+@router.post("/{id_propiedad}/matches")
+def calculate_matches_propiedad(
+    id_propiedad: int,
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """Calcula y persiste los matches para la propiedad."""
+    db_prop = db.query(models.Propiedad).filter(models.Propiedad.id_propiedad == id_propiedad).first()
+    if not db_prop:
+        raise HTTPException(status_code=404, detail="Propiedad no encontrada")
+    return matches_para_propiedad(db, id_propiedad, limit=limit, persist=True)
 
 # --- Multimedia ---
 

@@ -9,6 +9,7 @@ from fastapi import HTTPException, status
 from backend.models.cliente import Cliente, ClienteHistorial, ClienteNota, ClienteDocumento, ClienteActividad
 from backend.models.models import AuditoriaCambios
 from backend.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteNotaCreate, ClienteActividadCreate, ClienteDocumentoCreate
+from backend.services.delete_validations import validate_cliente_delete
 
 logger = logging.getLogger(__name__)
 
@@ -226,7 +227,11 @@ class ClienteService:
             db_cliente = ClienteService.get_cliente_by_id(db, id_cliente)
             if not db_cliente:
                 return False, "Cliente no encontrado"
-            
+
+            can_delete, reason = validate_cliente_delete(db, id_cliente)
+            if not can_delete:
+                return False, reason
+
             db.delete(db_cliente)
             db.commit()
             return True, None
