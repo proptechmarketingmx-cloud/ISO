@@ -269,16 +269,7 @@ export const CATALOGOS = {
     { value: 'renta_airbnb',    label: 'Renta por Airbnb' },
   ],
 
-  ],
 
-  mediosAdquisicion: [
-    { value: 'organico',    label: 'Orgánico' },
-    { value: 'pagado',      label: 'Pagado (CPC/CPM)' },
-    { value: 'email',       label: 'Email Marketing' },
-    { value: 'referral',    label: 'Referral' },
-    { value: 'directo',     label: 'Directo' },
-    { value: 'social',      label: 'Social Media' },
-  ],
 
   // ── Multimedia ────────────────────────────────────────────────────────────
 
