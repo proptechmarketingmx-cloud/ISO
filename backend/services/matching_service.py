@@ -118,18 +118,32 @@ def _score_economico(c: Cliente, p: Propiedad) -> tuple[float, dict]:
                 puntos += 60
                 detalles["precio_en_presupuesto"] = "✓"
             elif precio < pmin:
-                # Una propiedad por debajo del mínimo también es positiva para el cliente.
-                ratio = min(1.0, (pmin / precio) if precio > 0 else 1.0)
-                puntos += int(60 * ratio)
-                detalles["precio_por_debajo"] = f"{precio:,.0f} < {pmin:,.0f}"
+                # Bug 8: Guard de precio anómalmente bajo (< 1% del presupuesto mínimo)
+                if pmin > 0 and precio < pmin * 0.01:
+                    detalles["precio_anomalo"] = f"precio sospechoso ({precio:,.0f}), sin puntos"
+                else:
+                    ratio = min(1.0, pmin / precio)
+                    puntos += int(60 * ratio)
+                    detalles["precio_por_debajo"] = f"{precio:,.0f} < {pmin:,.0f}"
             else:
                 # propiedad más cara que el máximo
                 exceso = (precio - pmax) / pmax if pmax > 0 else 1
                 puntos += max(0, int(40 * (1 - exceso * 2)))
                 detalles["precio_sobre_presupuesto"] = f"exceso {exceso:.0%}"
-        elif pmax is not None and precio <= pmax:
-            puntos += 50
-            detalles["precio_dentro_max"] = "✓"
+        elif pmax is not None:
+            # Bug 7: gradualidad simétrica cuando solo existe pmax
+            if precio <= pmax:
+                puntos += 50
+                detalles["precio_dentro_max"] = "✓"
+            else:
+                exceso = (precio - pmax) / pmax if pmax > 0 else 1
+                puntos += max(0, int(40 * (1 - exceso * 2)))
+                detalles["precio_sobre_max"] = f"exceso {exceso:.0%}"
+        elif pmin is not None:
+            # Solo tiene mínimo definido
+            if precio >= pmin:
+                puntos += 40
+                detalles["precio_sobre_min"] = "✓"
 
     # Tipo de crédito
     credito_c  = (c.tipo_credito or "").lower()
@@ -183,6 +197,17 @@ def _score_fisico(c: Cliente, p: Propiedad) -> tuple[float, dict]:
         else:
             detalles["recamaras_pa"] = f"✗ ({rec_p}/{rec_c})"
 
+    # Bug 4: Recámaras planta baja
+    rec_pb_c = c.habitaciones_pb
+    rec_pb_p = p.recamaras_pb
+    if rec_pb_c is not None and rec_pb_p is not None:
+        checks += 1
+        if rec_pb_p >= rec_pb_c:
+            puntos += 1
+            detalles["recamaras_pb"] = "✓"
+        else:
+            detalles["recamaras_pb"] = f"✗ ({rec_pb_p}/{rec_pb_c})"
+
     # Baños
     ban_c = _to_f(c.banos)
     ban_p = _to_f(p.banos)
@@ -210,6 +235,16 @@ def _score_fisico(c: Cliente, p: Propiedad) -> tuple[float, dict]:
             puntos += 1
             detalles["terreno_min"] = "✓"
 
+    # Bug 4: Terreno máximo — exceder el máximo deseado penaliza
+    ter_max = _to_f(c.m2_terreno_max)
+    if ter_max and ter_p and ter_p > ter_max:
+        checks += 1
+        detalles["terreno_max"] = f"✗ ({ter_p:,.0f} > {ter_max:,.0f})"
+    elif ter_max and ter_p and ter_p <= ter_max:
+        checks += 1
+        puntos += 1
+        detalles["terreno_max"] = "✓"
+
     # Construcción mínima
     con_min = _to_f(c.m2_construccion_min)
     con_p   = _to_f(p.m2_construccion)
@@ -218,6 +253,16 @@ def _score_fisico(c: Cliente, p: Propiedad) -> tuple[float, dict]:
         if con_p >= con_min:
             puntos += 1
             detalles["construccion_min"] = "✓"
+
+    # Bug 4: Construcción máxima — exceder penaliza
+    con_max = _to_f(c.m2_construccion_max)
+    if con_max and con_p and con_p > con_max:
+        checks += 1
+        detalles["construccion_max"] = f"✗ ({con_p:,.0f} > {con_max:,.0f})"
+    elif con_max and con_p and con_p <= con_max:
+        checks += 1
+        puntos += 1
+        detalles["construccion_max"] = "✓"
 
     # Antigüedad máxima
     ant_max = c.antiguedad_max
@@ -228,6 +273,17 @@ def _score_fisico(c: Cliente, p: Propiedad) -> tuple[float, dict]:
             puntos += 1
             detalles["antiguedad"] = "✓"
 
+    # Bug 4: Niveles máximos
+    niv_max = c.niveles_max
+    niv_p   = p.niveles
+    if niv_max is not None and niv_p is not None:
+        checks += 1
+        if niv_p <= niv_max:
+            puntos += 1
+            detalles["niveles"] = "✓"
+        else:
+            detalles["niveles"] = f"✗ ({niv_p} > {niv_max})"
+
     # Amenidades deseadas vs disponibles
     am_c = set(_parse_json_list(c.amenidades_deseadas))
     am_p = set(_parse_json_list(p.amenidades))
@@ -236,6 +292,17 @@ def _score_fisico(c: Cliente, p: Propiedad) -> tuple[float, dict]:
         match_ratio = len(am_c & am_p) / len(am_c)
         puntos += match_ratio
         detalles["amenidades"] = f"{len(am_c & am_p)}/{len(am_c)}"
+
+    # Bug 4: ideal_para de la propiedad vs motivacion del cliente (boost si coincide)
+    ideal_para_p = set(_parse_json_list(p.ideal_para))
+    motivacion_c = (c.motivacion or "").lower().strip()
+    if ideal_para_p and motivacion_c:
+        checks += 1
+        if motivacion_c in {v.lower() for v in ideal_para_p}:
+            puntos += 1
+            detalles["ideal_para"] = "✓"
+        else:
+            detalles["ideal_para"] = "no prioritario"
 
     if checks == 0:
         return 50.0, {"nota": "sin_datos_fisicos"}
@@ -418,10 +485,19 @@ def matches_para_cliente(db: Session, id_cliente: int, limit: int = 20, persist:
 def matches_para_propiedad(db: Session, id_propiedad: int, limit: int = 20, persist: bool = False) -> list:
     """
     Calcula y devuelve los clientes más compatibles con una propiedad.
+    Bug 12: Si la propiedad no está disponible, añade campo 'advertencia' en el resultado.
     """
     propiedad = db.query(Propiedad).filter_by(id_propiedad=id_propiedad).first()
     if not propiedad:
         return []
+
+    # Bug 12: advertencia si la propiedad no está activa
+    advertencia = None
+    if propiedad.status not in ("disponible", "reservada"):
+        advertencia = (
+            f"Esta propiedad tiene status '{propiedad.status}' y no está activamente "
+            f"disponible. Los matches mostrados son informativos."
+        )
 
     clientes  = db.query(Cliente).all()
     resultados = []
@@ -431,6 +507,8 @@ def matches_para_propiedad(db: Session, id_propiedad: int, limit: int = 20, pers
         r["nombre_completo"] = f"{c.nombre} {c.apellido_paterno} {c.apellido_materno or ''}".strip()
         r["whatsapp"]        = c.whatsapp
         r["correo"]          = c.correo
+        if advertencia:
+            r["advertencia"] = advertencia
         resultados.append(r)
         if persist:
             guardar_o_actualizar_compat(db, c.id_cliente, id_propiedad, {

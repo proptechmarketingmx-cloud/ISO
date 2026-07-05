@@ -1,6 +1,7 @@
 import re
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional, List
+from typing import Any
 from decimal import Decimal
 from datetime import datetime, date
 
@@ -244,6 +245,13 @@ class PropiedadUpdate(BaseModel):
     banos:               Optional[Decimal] = None
     niveles:             Optional[int]     = None
     estacionamientos:    Optional[int]     = None
+
+    @field_validator('niveles', mode='before')
+    @classmethod
+    def normalizar_niveles(cls, v: Any) -> Any:
+        """Si se envía null/None explícito, restaurar al default de negocio (1)."""
+        return v if v is not None else 1
+
     antiguedad:          Optional[int]     = None
     orientacion:         Optional[str]     = Field(None, max_length=50)
     estado_conservacion: Optional[str]     = Field(None, max_length=50)

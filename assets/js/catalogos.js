@@ -244,6 +244,14 @@ export const CATALOGOS = {
     { value: 'prefiero_no',  label: 'Prefiero no decir' },
   ],
 
+  // Catálogo para el campo "Género Ideal" de propiedades (incluye comodín del algoritmo)
+  generosIdealPropiedad: [
+    { value: 'cualquiera',   label: 'Cualquiera (sin preferencia)' },
+    { value: 'masculino',    label: 'Masculino' },
+    { value: 'femenino',     label: 'Femenino' },
+    { value: 'no_binario',   label: 'No Binario' },
+  ],
+
   escolaridades: [
     { value: 'primaria',          label: 'Primaria' },
     { value: 'secundaria',        label: 'Secundaria' },

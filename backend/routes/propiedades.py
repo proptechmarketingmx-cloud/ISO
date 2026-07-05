@@ -7,16 +7,10 @@ from backend.models import models
 from backend.schemas import schemas
 from backend.services.delete_validations import validate_propiedad_delete
 from backend.services.matching_service import matches_para_propiedad
-from backend.services.kpis_service import get_kpis_propiedades
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/propiedades", tags=["Propiedades"])
-
-@router.get("/kpis", tags=["KPIs"])
-def get_kpis(db: Session = Depends(get_db)):
-    """KPIs automáticos del módulo de propiedades."""
-    return get_kpis_propiedades(db)
 
 @router.get("", response_model=List[schemas.PropiedadResponse])
 def read_propiedades(
@@ -161,4 +155,22 @@ def add_multimedia(id_propiedad: int, media: schemas.PropiedadMultimediaCreate, 
     db.commit()
     db.refresh(db_media)
     return db_media
+
+
+@router.delete("/{id_propiedad}/multimedia/{id_media}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_multimedia(id_propiedad: int, id_media: int, db: Session = Depends(get_db)):
+    """Elimina un archivo multimedia de la propiedad de forma permanente."""
+    db_prop = db.query(models.Propiedad).filter(models.Propiedad.id_propiedad == id_propiedad).first()
+    if not db_prop:
+        raise HTTPException(status_code=404, detail="Propiedad no encontrada")
+    db_media = db.query(models.PropiedadMultimedia).filter(
+        models.PropiedadMultimedia.id_media == id_media,
+        models.PropiedadMultimedia.id_propiedad == id_propiedad
+    ).first()
+    if not db_media:
+        raise HTTPException(status_code=404, detail="Archivo multimedia no encontrado")
+    db.delete(db_media)
+    db.commit()
+    logger.info("Multimedia eliminado: id_media=%s de propiedad id=%s", id_media, id_propiedad)
+    return None
 

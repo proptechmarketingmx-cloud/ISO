@@ -4,7 +4,7 @@ from backend.models.cliente import Cliente, ClienteActividad
 from backend.models.models import Propiedad, Asesor, RelacionCliente
 
 ESTADOS_CLIENTE_BLOQUEADOS = frozenset({"negociacion", "cotizacion", "cerrado"})
-STATUS_PROPIEDAD_BLOQUEADOS = frozenset({"reservada"})
+STATUS_PROPIEDAD_BLOQUEADOS = frozenset({"reservada", "vendida", "rentada"})
 
 
 def validate_cliente_delete(db: Session, id_cliente: int) -> Tuple[bool, Optional[str]]:
@@ -38,8 +38,10 @@ def validate_propiedad_delete(db: Session, id_propiedad: int) -> Tuple[bool, Opt
 
     if propiedad.status in STATUS_PROPIEDAD_BLOQUEADOS:
         return False, (
-            f"No se puede eliminar la propiedad porque tiene una operación activa "
-            f"(status: {propiedad.status})."
+            f"No se puede eliminar la propiedad porque tiene un status protegido "
+            f"(status: {propiedad.status}). Eliminar esta propiedad borraría en cascada "
+            f"toda su multimedia e historial de compatibilidad. "
+            f"Cambie el status a 'inactiva' antes de eliminar."
         )
 
     return True, None

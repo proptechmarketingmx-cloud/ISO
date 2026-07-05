@@ -65,8 +65,9 @@ export const propiedadesApi = {
   create: (data)                 => api.post('/propiedades', data),
   update: (id, data)             => api.put(`/propiedades/${id}`, data),
   remove: (id)                   => api.delete(`/propiedades/${id}`),
-  getMultimedia: (id)            => api.get(`/propiedades/${id}/multimedia`),
-  addMultimedia: (id, data)      => api.post(`/propiedades/${id}/multimedia`, data),
+  getMultimedia:    (id)         => api.get(`/propiedades/${id}/multimedia`),
+  addMultimedia:    (id, data)   => api.post(`/propiedades/${id}/multimedia`, data),
+  removeMultimedia: (propId, mediaId) => api.delete(`/propiedades/${propId}/multimedia/${mediaId}`),
   propiedadMatches: (id, limit = 20) => api.get(`/propiedades/${id}/matches?limit=${limit}`),
 };
 
