@@ -29,69 +29,125 @@ export const CATALOGOS = {
 
   // ── Demografía y Perfil ──────────────────────────────────────────────────
   generos: [
-    { value: 'M', label: 'Masculino' },
-    { value: 'F', label: 'Femenino' },
-    { value: 'O', label: 'Otro' }
+    { value: 'masculino',    label: 'Masculino' },
+    { value: 'femenino',     label: 'Femenino' },
+    { value: 'no_binario',   label: 'No Binario' },
+    { value: 'prefiero_no',  label: 'Prefiero no decir' },
+    // Códigos legados/abreviados para compatibilidad con registros antiguos
+    { value: 'M',            label: 'Masculino (M)' },
+    { value: 'F',            label: 'Femenino (F)' },
+    { value: 'O',            label: 'Otro (O)' }
+  ],
+
+  // Catálogo para el campo "Género Ideal" de propiedades (incluye comodín del algoritmo)
+  generosIdealPropiedad: [
+    { value: 'cualquiera',   label: 'Cualquiera (sin preferencia)' },
+    { value: 'masculino',    label: 'Masculino' },
+    { value: 'femenino',     label: 'Femenino' },
+    { value: 'no_binario',   label: 'No Binario' },
   ],
 
   estadosCiviles: [
-    { value: 'soltero', label: 'Soltero(a)' },
-    { value: 'casado', label: 'Casado(a)' },
-    { value: 'divorciado', label: 'Divorciado(a)' },
-    { value: 'viudo', label: 'Viudo(a)' },
-    { value: 'union_libre', label: 'Unión Libre' }
+    { value: 'soltero',      label: 'Soltero/a' },
+    { value: 'casado',       label: 'Casado/a' },
+    { value: 'divorciado',   label: 'Divorciado/a' },
+    { value: 'viudo',        label: 'Viudo/a' },
+    { value: 'union_libre',  label: 'Unión Libre' },
+    { value: 'separado',     label: 'Separado/a' },
   ],
 
   escolaridades: [
-    { value: 'primaria', label: 'Primaria' },
-    { value: 'secundaria', label: 'Secundaria' },
-    { value: 'preparatoria', label: 'Preparatoria' },
-    { value: 'licenciatura', label: 'Licenciatura' },
-    { value: 'maestria', label: 'Maestría' },
-    { value: 'doctorado', label: 'Doctorado' }
+    { value: 'primaria',          label: 'Primaria' },
+    { value: 'secundaria',        label: 'Secundaria' },
+    { value: 'preparatoria',      label: 'Preparatoria / Bachillerato' },
+    { value: 'tecnico',           label: 'Técnico' },
+    { value: 'licenciatura',      label: 'Licenciatura' },
+    { value: 'ingenieria',        label: 'Ingeniería' },
+    { value: 'maestria',          label: 'Maestría' },
+    { value: 'doctorado',         label: 'Doctorado' },
+    { value: 'posgrado',          label: 'Posgrado' },
+  ],
+
+  generaciones: [
+    { value: 'silenciosa',  label: 'Generación Silenciosa', desde: null,  hasta: 1945 },
+    { value: 'boomers',     label: 'Baby Boomers',          desde: 1946,  hasta: 1964 },
+    { value: 'x',           label: 'Generación X',          desde: 1965,  hasta: 1980 },
+    { value: 'millennial',  label: 'Millennial',            desde: 1981,  hasta: 1996 },
+    { value: 'z',           label: 'Generación Z',          desde: 1997,  hasta: 2012 },
+    { value: 'alpha',       label: 'Generación Alfa',       desde: 2013,  hasta: null },
   ],
 
   // ── Financiero y Adquisición ─────────────────────────────────────────────
   tiposCredito: [
-    { value: 'infonavit', label: 'INFONAVIT' },
-    { value: 'fovissste', label: 'FOVISSSTE' },
-    { value: 'bancario', label: 'Bancario' },
-    { value: 'recursos_propios', label: 'Recursos Propios' },
-    { value: 'cofinavit', label: 'Cofinavit' },
-    { value: 'alianza2', label: 'Alianza 2' }
+    { value: 'contado',             label: 'Contado' },
+    { value: 'recursos_propios',    label: 'Recursos Propios' },
+    { value: 'infonavit',           label: 'INFONAVIT' },
+    { value: 'fovissste',           label: 'FOVISSSTE' },
+    { value: 'bancario',            label: 'Crédito Bancario' },
+    { value: 'cofinavit',           label: 'Cofinavit' },
+    { value: 'infonavit_cofinavit', label: 'INFONAVIT + COFINAVIT' },
+    { value: 'preventa',            label: 'Preventa / Enganche' },
+    { value: 'desarrollador',       label: 'Crédito Desarrollador' },
+    { value: 'cofinanciado',        label: 'Cofinanciado' },
+    { value: 'alianza2',            label: 'Alianza 2' }
   ],
 
   motivaciones: [
-    { value: 'inversion', label: 'Inversión' },
-    { value: 'vivienda_propia', label: 'Vivienda Propia' },
-    { value: 'vacacional', label: 'Vacacional / Descanso' },
-    { value: 'negocio', label: 'Negocio Comercial' }
+    { value: 'primera_vivienda',   label: 'Primera Vivienda' },
+    { value: 'vivienda_propia',    label: 'Vivienda Propia' },
+    { value: 'cambio_residencia',  label: 'Cambio de Residencia' },
+    { value: 'inversion',          label: 'Inversión' },
+    { value: 'patrimonio',         label: 'Patrimonio' },
+    { value: 'vacacional',         label: 'Vacacional' },
+    { value: 'negocio',            label: 'Negocio / Comercio' },
+    { value: 'downsizing',         label: 'Downsizing' },
+    { value: 'divorcio',           label: 'Divorcio / Separación' }
   ],
 
   temporalidades: [
-    { value: 'inmediato', label: 'Inmediato (0-1 mes)' },
-    { value: 'corto_plazo', label: 'Corto Plazo (1-3 meses)' },
+    { value: 'inmediato',    label: 'Compra Inmediata / Inmediato (0-1 mes)' },
+    { value: 'corto_plazo',  label: 'Corto Plazo (1-3 meses)' },
     { value: 'mediano_plazo', label: 'Mediano Plazo (3-6 meses)' },
-    { value: 'largo_plazo', label: 'Largo Plazo (6+ meses)' }
+    { value: 'largo_plazo',   label: 'Largo Plazo (6+ meses)' },
+    { value: '1_3_meses',    label: '1–3 meses' },
+    { value: '3_6_meses',    label: '3–6 meses' },
+    { value: 'mas_6_meses',  label: 'Más de 6 meses' }
   ],
 
   fuentesLead: [
-    { value: 'organico', label: 'Orgánico' },
-    { value: 'referido', label: 'Referido' },
+    { value: 'organico',       label: 'Orgánico' },
+    { value: 'referido',       label: 'Referido' },
     { value: 'redes_sociales', label: 'Redes Sociales' },
-    { value: 'campana', label: 'Campaña Pagada' },
-    { value: 'directo', label: 'Directo / Walk-in' }
+    { value: 'campana',        label: 'Campaña Pagada' },
+    { value: 'directo',        label: 'Directo / Walk-in' },
+    { value: 'facebook',       label: 'Facebook' },
+    { value: 'instagram',      label: 'Instagram' },
+    { value: 'google',         label: 'Google Ads' },
+    { value: 'tiktok',         label: 'TikTok' },
+    { value: 'portales',       label: 'Portales Inmobiliarios' },
+    { value: 'walk_in',        label: 'Walk-in (oficina)' },
+    { value: 'whatsapp',       label: 'WhatsApp directo' },
+    { value: 'llamada',        label: 'Llamada directa' },
+    { value: 'correo',         label: 'Correo electrónico' },
+    { value: 'exposicion',     label: 'Exposición / Evento' },
+    { value: 'pagina_web',     label: 'Página Web' },
+    { value: 'otro',           label: 'Otro' }
   ],
 
   mediosAdquisicion: [
-    { value: 'facebook', label: 'Facebook' },
-    { value: 'instagram', label: 'Instagram' },
-    { value: 'google', label: 'Google Ads' },
-    { value: 'whatsapp', label: 'WhatsApp' },
-    { value: 'sitio_web', label: 'Sitio Web' },
-    { value: 'inmobiliaria', label: 'Portal Inmobiliario' }
+    { value: 'facebook',     label: 'Facebook' },
+    { value: 'instagram',    label: 'Instagram' },
+    { value: 'google',       label: 'Google Ads' },
+    { value: 'whatsapp',     label: 'WhatsApp' },
+    { value: 'sitio_web',    label: 'Sitio Web' },
+    { value: 'inmobiliaria', label: 'Portal Inmobiliario' },
+    { value: 'organico',     label: 'Orgánico' },
+    { value: 'pagado',       label: 'Pagado (CPC/CPM)' },
+    { value: 'email',        label: 'Email Marketing' },
+    { value: 'referral',     label: 'Referral' },
+    { value: 'directo',      label: 'Directo' },
+    { value: 'social',       label: 'Social Media' }
   ],
-
 
   // ── Propiedad ─────────────────────────────────────────────────────────────
 
@@ -213,102 +269,6 @@ export const CATALOGOS = {
     { value: 'renta_airbnb',    label: 'Renta por Airbnb' },
   ],
 
-  // ── Financiero ────────────────────────────────────────────────────────────
-
-  tiposCredito: [
-    { value: 'contado',        label: 'Contado' },
-    { value: 'infonavit',      label: 'INFONAVIT' },
-    { value: 'fovissste',      label: 'FOVISSSTE' },
-    { value: 'bancario',       label: 'Crédito Bancario' },
-    { value: 'infonavit_cofinavit', label: 'INFONAVIT + COFINAVIT' },
-    { value: 'preventa',       label: 'Preventa / Enganche' },
-    { value: 'desarrollador',  label: 'Crédito Desarrollador' },
-    { value: 'cofinanciado',   label: 'Cofinanciado' },
-  ],
-
-  // ── Personas — Demográfico ────────────────────────────────────────────────
-
-  estadosCiviles: [
-    { value: 'soltero',      label: 'Soltero/a' },
-    { value: 'casado',       label: 'Casado/a' },
-    { value: 'divorciado',   label: 'Divorciado/a' },
-    { value: 'viudo',        label: 'Viudo/a' },
-    { value: 'union_libre',  label: 'Unión Libre' },
-    { value: 'separado',     label: 'Separado/a' },
-  ],
-
-  generos: [
-    { value: 'masculino',    label: 'Masculino' },
-    { value: 'femenino',     label: 'Femenino' },
-    { value: 'no_binario',   label: 'No Binario' },
-    { value: 'prefiero_no',  label: 'Prefiero no decir' },
-  ],
-
-  // Catálogo para el campo "Género Ideal" de propiedades (incluye comodín del algoritmo)
-  generosIdealPropiedad: [
-    { value: 'cualquiera',   label: 'Cualquiera (sin preferencia)' },
-    { value: 'masculino',    label: 'Masculino' },
-    { value: 'femenino',     label: 'Femenino' },
-    { value: 'no_binario',   label: 'No Binario' },
-  ],
-
-  escolaridades: [
-    { value: 'primaria',          label: 'Primaria' },
-    { value: 'secundaria',        label: 'Secundaria' },
-    { value: 'preparatoria',      label: 'Preparatoria / Bachillerato' },
-    { value: 'tecnico',           label: 'Técnico' },
-    { value: 'licenciatura',      label: 'Licenciatura' },
-    { value: 'ingenieria',        label: 'Ingeniería' },
-    { value: 'maestria',          label: 'Maestría' },
-    { value: 'doctorado',         label: 'Doctorado' },
-    { value: 'posgrado',          label: 'Posgrado' },
-  ],
-
-  generaciones: [
-    { value: 'silenciosa',  label: 'Generación Silenciosa', desde: null,  hasta: 1945 },
-    { value: 'boomers',     label: 'Baby Boomers',          desde: 1946,  hasta: 1964 },
-    { value: 'x',           label: 'Generación X',          desde: 1965,  hasta: 1980 },
-    { value: 'millennial',  label: 'Millennial',            desde: 1981,  hasta: 1996 },
-    { value: 'z',           label: 'Generación Z',          desde: 1997,  hasta: 2012 },
-    { value: 'alpha',       label: 'Generación Alfa',       desde: 2013,  hasta: null },
-  ],
-
-  // ── Motivación y Temporalidad ─────────────────────────────────────────────
-
-  motivaciones: [
-    { value: 'primera_vivienda',   label: 'Primera Vivienda' },
-    { value: 'cambio_residencia',  label: 'Cambio de Residencia' },
-    { value: 'inversion',          label: 'Inversión' },
-    { value: 'patrimonio',         label: 'Patrimonio' },
-    { value: 'vacacional',         label: 'Vacacional' },
-    { value: 'negocio',            label: 'Negocio / Comercio' },
-    { value: 'downsizing',         label: 'Downsizing' },
-    { value: 'divorcio',           label: 'Divorcio / Separación' },
-  ],
-
-  temporalidades: [
-    { value: 'inmediato',    label: 'Compra Inmediata' },
-    { value: '1_3_meses',    label: '1–3 meses' },
-    { value: '3_6_meses',    label: '3–6 meses' },
-    { value: 'mas_6_meses',  label: 'Más de 6 meses' },
-  ],
-
-  // ── Seguimiento Comercial ─────────────────────────────────────────────────
-
-  fuentesLead: [
-    { value: 'facebook',       label: 'Facebook' },
-    { value: 'instagram',      label: 'Instagram' },
-    { value: 'google',         label: 'Google Ads' },
-    { value: 'tiktok',         label: 'TikTok' },
-    { value: 'portales',       label: 'Portales Inmobiliarios' },
-    { value: 'referido',       label: 'Referido' },
-    { value: 'walk_in',        label: 'Walk-in (oficina)' },
-    { value: 'whatsapp',       label: 'WhatsApp directo' },
-    { value: 'llamada',        label: 'Llamada directa' },
-    { value: 'correo',         label: 'Correo electrónico' },
-    { value: 'exposicion',     label: 'Exposición / Evento' },
-    { value: 'pagina_web',     label: 'Página Web' },
-    { value: 'otro',           label: 'Otro' },
   ],
 
   mediosAdquisicion: [

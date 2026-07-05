@@ -1,6 +1,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from backend.database import get_db
 from backend.models import models
@@ -75,7 +76,14 @@ def create_propiedad(propiedad: schemas.PropiedadCreate, db: Session = Depends(g
     db_prop = models.Propiedad(**propiedad.model_dump())
     calcular_campos_propiedad(db_prop)
     db.add(db_prop)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Error de integridad en base de datos al crear propiedad. Verifique los campos obligatorios. Detalle: {str(e.orig or e)}"
+        )
     db.refresh(db_prop)
     return db_prop
 
@@ -89,7 +97,14 @@ def update_propiedad(id_propiedad: int, propiedad: schemas.PropiedadUpdate, db: 
         setattr(db_prop, key, value)
         
     calcular_campos_propiedad(db_prop)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Error de integridad en base de datos al actualizar propiedad. Verifique los campos obligatorios. Detalle: {str(e.orig or e)}"
+        )
     db.refresh(db_prop)
     return db_prop
 

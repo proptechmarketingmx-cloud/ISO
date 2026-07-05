@@ -9,6 +9,10 @@ import backend.models.models  # noqa: F401 — registra tablas compartidas
 # Crear tablas en la base de datos de manera automática
 Base.metadata.create_all(bind=engine)
 
+# Aplicar migraciones incrementales automáticas (si corresponde a MySQL)
+from backend.database_migration import run_database_migrations
+run_database_migrations(engine)
+
 app = FastAPI(
     title="ISO API",
     description="Backend API para la plataforma inmobiliaria ISO y su sistema CNA",
