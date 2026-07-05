@@ -64,7 +64,9 @@ def calcular_campos_automaticos(data: dict):
             birth_date = datetime.strptime(fnac, "%Y-%m-%d")
             today = datetime.today()
             edad = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-            data["edad"] = edad
+            # Acotar edad a rango válido; datos corruptos (ej. año 0516) producen
+            # valores negativos o > 120 que hacen fallar la serialización Pydantic.
+            data["edad"] = edad if 0 <= edad <= 120 else None
             
             year = birth_date.year
             if year <= 1945:

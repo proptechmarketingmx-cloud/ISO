@@ -181,28 +181,40 @@ class ClienteBase(BaseModel):
     @field_validator("curp")
     @classmethod
     def validar_curp(cls, v: Optional[str]) -> Optional[str]:
-        if v and not _RE_CURP.match(v.strip().upper()):
+        if not v or not v.strip():
+            return None
+        v_clean = v.strip().upper()
+        if not _RE_CURP.match(v_clean):
             raise ValueError("CURP inválido. Verifica el formato (18 caracteres).")
-        return v.upper() if v else v
+        return v_clean
 
     @field_validator("rfc")
     @classmethod
     def validar_rfc(cls, v: Optional[str]) -> Optional[str]:
-        if v and not _RE_RFC.match(v.strip().upper()):
+        if not v or not v.strip():
+            return None
+        v_clean = v.strip().upper()
+        if not _RE_RFC.match(v_clean):
             raise ValueError("RFC inválido. Verifica el formato (12–13 caracteres).")
-        return v.upper() if v else v
+        return v_clean
 
     @field_validator("correo")
     @classmethod
     def validar_correo(cls, v: Optional[str]) -> Optional[str]:
-        if v and not _RE_EMAIL.match(v.strip()):
+        if not v or not v.strip():
+            return None
+        v_clean = v.strip().lower()
+        if not _RE_EMAIL.match(v_clean):
             raise ValueError("Correo electrónico inválido.")
-        return v.strip().lower() if v else v
+        return v_clean
 
     @field_validator("whatsapp", "conyuge_whatsapp")
     @classmethod
     def validar_whatsapp(cls, v: Optional[str]) -> Optional[str]:
-        if v and not _RE_WA.match(v.replace(" ", "")):
+        if not v or not v.strip():
+            return None
+        v_clean = v.replace(" ", "")
+        if not _RE_WA.match(v_clean):
             raise ValueError("Número de WhatsApp inválido. Incluye la lada (ej. +521XXXXXXXXXX).")
         return v
 
@@ -312,28 +324,40 @@ class ClienteUpdate(BaseModel):
     @field_validator("curp")
     @classmethod
     def validar_curp(cls, v):
-        if v and not _RE_CURP.match(v.strip().upper()):
+        if not v or not v.strip():
+            return None
+        v_clean = v.strip().upper()
+        if not _RE_CURP.match(v_clean):
             raise ValueError("CURP inválido.")
-        return v.upper() if v else v
+        return v_clean
 
     @field_validator("rfc")
     @classmethod
     def validar_rfc(cls, v):
-        if v and not _RE_RFC.match(v.strip().upper()):
+        if not v or not v.strip():
+            return None
+        v_clean = v.strip().upper()
+        if not _RE_RFC.match(v_clean):
             raise ValueError("RFC inválido.")
-        return v.upper() if v else v
+        return v_clean
 
     @field_validator("correo")
     @classmethod
     def validar_correo(cls, v):
-        if v and not _RE_EMAIL.match(v.strip()):
+        if not v or not v.strip():
+            return None
+        v_clean = v.strip().lower()
+        if not _RE_EMAIL.match(v_clean):
             raise ValueError("Correo inválido.")
-        return v.strip().lower() if v else v
+        return v_clean
 
     @field_validator("whatsapp")
     @classmethod
     def validar_whatsapp(cls, v):
-        if v and not _RE_WA.match(v.replace(" ", "")):
+        if not v or not v.strip():
+            return None
+        v_clean = v.replace(" ", "")
+        if not _RE_WA.match(v_clean):
             raise ValueError("WhatsApp inválido.")
         return v
 
@@ -341,6 +365,22 @@ class ClienteUpdate(BaseModel):
 class ClienteResponse(ClienteBase):
     id_cliente: int
     fecha_registro: datetime
+    # Sobreescribir edad sin restricciones ge/le para tolerar datos históricos
+    # corruptos en la BD (ej. edad=1510 por fecha '0516-05-15').
+    # Un field_validator sanea el valor a None si está fuera del rango válido.
+    edad: Optional[int] = Field(None, description="Calculado automáticamente")
+
+    @field_validator("edad", mode="before")
+    @classmethod
+    def sanear_edad_respuesta(cls, v: Optional[int]) -> Optional[int]:
+        if v is None:
+            return None
+        try:
+            v_int = int(v)
+        except (TypeError, ValueError):
+            return None
+        return v_int if 0 <= v_int <= 120 else None
+
     class Config:
         from_attributes = True
 

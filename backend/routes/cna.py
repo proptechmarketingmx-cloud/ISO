@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 from backend.database import get_db
 from backend.models import models
+from backend.models.cliente import Cliente
 from collections import defaultdict
 import datetime
 
@@ -11,7 +12,7 @@ router = APIRouter(prefix="/cna", tags=["CNA"])
 # ── Helpers de Cálculo CNA para Clientes ──────────────────────────────────
 
 def calcular_scores_clientes(db: Session) -> List[Dict[str, Any]]:
-    clientes = db.query(models.Cliente).all()
+    clientes = db.query(Cliente).all()
     relaciones = db.query(models.RelacionCliente).all()
 
     # 1. Mapeos de relaciones
@@ -98,14 +99,10 @@ def calcular_scores_clientes(db: Session) -> List[Dict[str, Any]]:
         # Componentes Provider Score
         # Encontramos valores máximos para normalizar volumen, comisión y actividad
         # (Para no complicar, usamos escalas razonables o relativas)
-        max_vol = max([sum(float(l.valor_cierre or 0.0) for l in leads_referidos_por[x.id_cliente] if l.etapa == "cerrado") for x in clientes] or [1.0])
-        max_vol = max_vol if max_vol > 0 else 1.0
-        
-        max_com = max([sum(float(l.comision_cierre or 0.0) for l in leads_referidos_por[x.id_cliente] if l.etapa == "cerrado") for x in clientes] or [1.0])
-        max_com = max_com if max_com > 0 else 1.0
-        
-        comp_vol = (volumen / max_vol * 100)
-        comp_com = (comision / max_com * 100)
+        max_vol = 1.0
+        max_com = 1.0
+        comp_vol = 0.0
+        comp_com = 0.0
         comp_act = min(actividad_reciente * 20.0, 100.0) # 5 interacciones = 100%
         
         provider_score = (comp_dir * 0.2) + (comp_conv * 0.2) + (comp_vol * 0.3) + (comp_com * 0.2) + (comp_act * 0.1)
@@ -117,9 +114,9 @@ def calcular_scores_clientes(db: Session) -> List[Dict[str, Any]]:
             "nombre": c.nombre,
             "apellido_paterno": c.apellido_paterno,
             "apellido_materno": c.apellido_materno,
-            "telefono": c.telefono,
+            "telefono": c.telefono_principal,
             "correo": c.correo,
-            "ciudad": c.ciudad,
+            "ciudad": c.municipio,
             "profesion": c.profesion,
             "referencias_directas": r_dir,
             "referencias_indirectas": r_ind,
@@ -189,7 +186,7 @@ def get_clientes_rankings(db: Session = Depends(get_db)):
 
 @router.get("/clientes/communities")
 def get_clientes_communities(db: Session = Depends(get_db)):
-    clientes = db.query(models.Cliente).all()
+    clientes = db.query(Cliente).all()
     relaciones = db.query(models.RelacionCliente).all()
     
     # Agrupación por componente conexo por tipo de relación
@@ -248,7 +245,7 @@ def get_clientes_communities(db: Session = Depends(get_db)):
     # 3. Agrupaciones Geográficas (misma ciudad)
     ciudad_grupos = defaultdict(list)
     for c in clientes:
-        cd = (c.ciudad or "").strip().upper()
+        cd = (c.municipio or "").strip().upper()
         if cd:
             ciudad_grupos[cd].append(c)
             
@@ -272,7 +269,7 @@ def get_clientes_communities(db: Session = Depends(get_db)):
 def calcular_scores_asesores(db: Session) -> List[Dict[str, Any]]:
     asesores = db.query(models.Asesor).all()
     relaciones = db.query(models.RelacionAsesor).all()
-    clientes = db.query(models.Cliente).all()
+    clientes = db.query(Cliente).all()
     propiedades = db.query(models.Propiedad).all()
 
     # 1. Relaciones de asesores
