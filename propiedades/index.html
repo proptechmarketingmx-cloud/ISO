@@ -1061,15 +1061,20 @@ function updatePropertyObjetivoSummary(prop) {
   document.getElementById('prop-objetivo-ingreso').textContent = prop.ingreso_recomendado != null ? formatCurrency(prop.ingreso_recomendado) : '—';
   document.getElementById('prop-objetivo-credito').textContent = prop.tipo_credito_ideal || '—';
   document.getElementById('prop-objetivo-familiar').textContent = prop.integrantes_ideal != null ? `${prop.integrantes_ideal} integrantes` : '—';
-  document.getElementById('prop-objetivo-score').textContent = prop.score_atractivo != null ? `${prop.score_atractivo.toFixed(1)}%` : '—';
+  
+  const scoreVal = prop.score_atractivo != null ? parseFloat(prop.score_atractivo) : NaN;
+  const scoreText = !isNaN(scoreVal) ? `${scoreVal.toFixed(1)}%` : '—';
+  document.getElementById('prop-objetivo-score').textContent = scoreText;
+  
   const objetivoIngreso = document.getElementById('prop-cna-objetivo-ingreso');
   const objetivoCredito = document.getElementById('prop-cna-objetivo-credito');
   const objetivoFamiliar = document.getElementById('prop-cna-objetivo-familiar');
   const objetivoScore = document.getElementById('prop-cna-objetivo-score');
+  
   if (objetivoIngreso) objetivoIngreso.textContent = prop.ingreso_recomendado != null ? formatCurrency(prop.ingreso_recomendado) : '—';
   if (objetivoCredito) objetivoCredito.textContent = prop.tipo_credito_ideal || '—';
   if (objetivoFamiliar) objetivoFamiliar.textContent = prop.integrantes_ideal != null ? `${prop.integrantes_ideal} integrantes` : '—';
-  if (objetivoScore) objetivoScore.textContent = prop.score_atractivo != null ? `${prop.score_atractivo.toFixed(1)}%` : '—';
+  if (objetivoScore) objetivoScore.textContent = scoreText;
 }
 
 document.getElementById('form-prop').addEventListener('submit', async (e) => {
