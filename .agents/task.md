@@ -12,8 +12,8 @@
 - [x] Añadir las relaciones inversas en el modelo `Propiedad`
 
 ## Capa 3 — Schemas Pydantic
-- [/] Definir esquemas para actividades, notas, documentos e historial de propiedades en `backend/schemas/schemas.py`
-- [/] Crear el esquema `PropiedadExpedienteResponse` que combine el modelo base de propiedad con sus listas satélite
+- [x] Definir esquemas para actividades, notas, documentos e historial de propiedades en `backend/schemas/schemas.py`
+- [x] Crear el esquema `PropiedadExpedienteResponse` que combine el modelo base de propiedad con sus listas satélite
 
 ## Capa 4 — Servicios y Rutas
 - [x] Crear `backend/services/matching_service.py`
@@ -22,11 +22,17 @@
 - [x] Ampliar `backend/routes/propiedades.py` (matches + multimedia + kpis)
 
 ## Capa 5 — Frontend Propiedades
-- [/] Reescribir `propiedades/index.html` con modal multi-sección (7 tabs)
+- [x] Reescribir `propiedades/index.html` con modal multi-sección (7 tabs)
 
 ## Capa 6 — Frontend Clientes
 - [x] Actualizar formulario de clientes (8 secciones + campos calculados)
 
-## Capa 7 — Documentación
+## Capa 7 — Notificaciones de Cumpleaños
+- [x] Crear el endpoint `GET /api/clientes/cumpleanos` en FastAPI para filtrar por cumpleaños del día y próximos 30 días
+- [x] Exponer la función `cumpleanos` en el frontend dentro de `clientesApi` en `assets/js/api.js`
+- [x] Diseñar e implementar el banner dinámico (dismissible con localStorage) para los cumpleaños de hoy en `dashboard/index.html`
+- [x] Diseñar e implementar el panel widget con la lista de próximos cumpleaños en `dashboard/index.html`
+
+## Capa 8 — Documentación
 - [x] Actualizar `docs/formularios.md`
 - [x] Actualizar `docs/modelo_datos.md`

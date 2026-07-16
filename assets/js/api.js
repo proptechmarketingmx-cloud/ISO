@@ -42,12 +42,14 @@ export const api = {
 
 /* ── Clientes ──────────────────────────────────────── */
 export const clientesApi = {
-  list:   (params = '')          => api.get(`/clientes${params}`),
-  get:    (id)                   => api.get(`/clientes/${id}`),
-  create: (data)                 => api.post('/clientes', data),
-  update: (id, data)             => api.put(`/clientes/${id}`, data),
-  remove: (id)                   => api.delete(`/clientes/${id}`),
+  list:        (params = '')  => api.get(`/clientes${params}`),
+  get:         (id)           => api.get(`/clientes/${id}`),
+  create:      (data)         => api.post('/clientes', data),
+  update:      (id, data)     => api.put(`/clientes/${id}`, data),
+  remove:      (id)           => api.delete(`/clientes/${id}`),
+  cumpleanos:  ()             => api.get('/clientes/cumpleanos'),
 };
+
 
 /* ── Leads ─────────────────────────────────────────── */
 export const leadsApi = {
