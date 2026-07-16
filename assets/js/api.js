@@ -69,6 +69,11 @@ export const propiedadesApi = {
   addMultimedia:    (id, data)   => api.post(`/propiedades/${id}/multimedia`, data),
   removeMultimedia: (propId, mediaId) => api.delete(`/propiedades/${propId}/multimedia/${mediaId}`),
   propiedadMatches: (id, limit = 20) => api.get(`/propiedades/${id}/matches?limit=${limit}`),
+  getExpediente:    (id)         => api.get(`/propiedades/${id}/expediente`),
+  addNota:          (id, data)   => api.post(`/propiedades/${id}/notas`, data),
+  addActividad:     (id, data)   => api.post(`/propiedades/${id}/actividades`, data),
+  addDocumento:     (id, data)   => api.post(`/propiedades/${id}/documentos`, data),
+  removeDocumento:  (propId, docId) => api.delete(`/propiedades/${propId}/documentos/${docId}`),
 };
 
 /* ── Asesores ──────────────────────────────────────── */

@@ -342,3 +342,49 @@ CREATE TABLE IF NOT EXISTS relaciones_asesores_cna (
   FOREIGN KEY (asesor_destino_id) REFERENCES asesores(id_asesor) ON DELETE CASCADE,
   CONSTRAINT unique_asesor_rel UNIQUE (asesor_origen_id, asesor_destino_id, tipo_relacion)
 ) ENGINE=InnoDB;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 7. Expediente de Propiedades
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS propiedades_actividades (
+  id_actividad INT AUTO_INCREMENT PRIMARY KEY,
+  id_propiedad INT NOT NULL,
+  tipo         VARCHAR(50)  NOT NULL,
+  descripcion  TEXT         NULL,
+  fecha        TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  id_asesor    INT          NULL,
+  FOREIGN KEY (id_propiedad) REFERENCES propiedades(id_propiedad) ON DELETE CASCADE,
+  FOREIGN KEY (id_asesor)    REFERENCES asesores(id_asesor)      ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS propiedades_documentos (
+  id_documento INT AUTO_INCREMENT PRIMARY KEY,
+  id_propiedad INT          NOT NULL,
+  nombre_archivo VARCHAR(255) NOT NULL,
+  tipo_documento VARCHAR(100) NULL,
+  url          TEXT         NOT NULL,
+  fecha_subida TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_propiedad) REFERENCES propiedades(id_propiedad) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS propiedades_notas (
+  id_nota    INT AUTO_INCREMENT PRIMARY KEY,
+  id_propiedad INT  NOT NULL,
+  contenido  TEXT NOT NULL,
+  fecha      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_propiedad) REFERENCES propiedades(id_propiedad) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS propiedades_historial (
+  id_historial INT AUTO_INCREMENT PRIMARY KEY,
+  id_propiedad INT          NOT NULL,
+  fecha        TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  usuario      VARCHAR(100) NULL,
+  accion       VARCHAR(100) NOT NULL,
+  descripcion  TEXT         NULL,
+  campo        VARCHAR(100) NULL,
+  valor_anterior TEXT       NULL,
+  valor_nuevo    TEXT       NULL,
+  FOREIGN KEY (id_propiedad) REFERENCES propiedades(id_propiedad) ON DELETE CASCADE
+) ENGINE=InnoDB;
+

@@ -107,6 +107,11 @@ class Propiedad(Base):
     asesor       = relationship("Asesor", back_populates="propiedades")
     multimedia   = relationship("PropiedadMultimedia",            back_populates="propiedad", cascade="all, delete-orphan")
     compatibilidades = relationship("CompatibilidadClientePropiedad", back_populates="propiedad", cascade="all, delete-orphan")
+    actividades  = relationship("PropiedadActividad", back_populates="propiedad", cascade="all, delete-orphan")
+    documentos   = relationship("PropiedadDocumento", back_populates="propiedad", cascade="all, delete-orphan")
+    notas        = relationship("PropiedadNota",      back_populates="propiedad", cascade="all, delete-orphan")
+    historial    = relationship("PropiedadHistorial", back_populates="propiedad", cascade="all, delete-orphan")
+
 
 
 class PropiedadMultimedia(Base):
@@ -190,3 +195,49 @@ class RelacionAsesor(Base):
     __table_args__ = (
         UniqueConstraint("asesor_origen_id", "asesor_destino_id", "tipo_relacion", name="unique_asesor_rel"),
     )
+
+
+class PropiedadActividad(Base):
+    __tablename__ = "propiedades_actividades"
+    id_actividad = Column(Integer, primary_key=True, index=True)
+    id_propiedad = Column(Integer, ForeignKey("propiedades.id_propiedad", ondelete="CASCADE"), nullable=False)
+    tipo         = Column(String(50), nullable=False)
+    descripcion  = Column(Text, nullable=True)
+    fecha        = Column(TIMESTAMP, server_default=func.now())
+    id_asesor    = Column(Integer, ForeignKey("asesores.id_asesor", ondelete="SET NULL"), nullable=True)
+    propiedad    = relationship("Propiedad", back_populates="actividades")
+
+
+class PropiedadDocumento(Base):
+    __tablename__ = "propiedades_documentos"
+    id_documento   = Column(Integer, primary_key=True, index=True)
+    id_propiedad   = Column(Integer, ForeignKey("propiedades.id_propiedad", ondelete="CASCADE"), nullable=False)
+    nombre_archivo = Column(String(255), nullable=False)
+    tipo_documento = Column(String(100), nullable=True)
+    url            = Column(Text, nullable=False)
+    fecha_subida   = Column(TIMESTAMP, server_default=func.now())
+    propiedad      = relationship("Propiedad", back_populates="documentos")
+
+
+class PropiedadNota(Base):
+    __tablename__ = "propiedades_notas"
+    id_nota      = Column(Integer, primary_key=True, index=True)
+    id_propiedad = Column(Integer, ForeignKey("propiedades.id_propiedad", ondelete="CASCADE"), nullable=False)
+    contenido    = Column(Text, nullable=False)
+    fecha        = Column(TIMESTAMP, server_default=func.now())
+    propiedad    = relationship("Propiedad", back_populates="notas")
+
+
+class PropiedadHistorial(Base):
+    __tablename__ = "propiedades_historial"
+    id_historial   = Column(Integer, primary_key=True, index=True)
+    id_propiedad   = Column(Integer, ForeignKey("propiedades.id_propiedad", ondelete="CASCADE"), nullable=False)
+    fecha          = Column(TIMESTAMP, server_default=func.now())
+    usuario        = Column(String(100), nullable=True)
+    accion         = Column(String(100), nullable=False)
+    descripcion    = Column(Text, nullable=True)
+    campo          = Column(String(100), nullable=True)
+    valor_anterior = Column(Text, nullable=True)
+    valor_nuevo    = Column(Text, nullable=True)
+    propiedad      = relationship("Propiedad", back_populates="historial")
+

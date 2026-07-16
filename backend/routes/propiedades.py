@@ -8,10 +8,34 @@ from backend.models import models
 from backend.schemas import schemas
 from backend.services.delete_validations import validate_propiedad_delete
 from backend.services.matching_service import matches_para_propiedad
+from backend.services.cliente_service import _values_equivalent
 
 logger = logging.getLogger(__name__)
 
+
 router = APIRouter(prefix="/propiedades", tags=["Propiedades"])
+
+def registrar_historial_propiedad(
+    db: Session,
+    id_propiedad: int,
+    accion: str,
+    descripcion: Optional[str] = None,
+    campo: Optional[str] = None,
+    valor_anterior: Optional[str] = None,
+    valor_nuevo: Optional[str] = None,
+    usuario: Optional[str] = "Sistema"
+):
+    historial = models.PropiedadHistorial(
+        id_propiedad=id_propiedad,
+        accion=accion,
+        descripcion=descripcion,
+        campo=campo,
+        valor_anterior=valor_anterior,
+        valor_nuevo=valor_nuevo,
+        usuario=usuario
+    )
+    db.add(historial)
+
 
 @router.get("", response_model=List[schemas.PropiedadResponse])
 def read_propiedades(
@@ -85,7 +109,18 @@ def create_propiedad(propiedad: schemas.PropiedadCreate, db: Session = Depends(g
             detail=f"Error de integridad en base de datos al crear propiedad. Verifique los campos obligatorios. Detalle: {str(e.orig or e)}"
         )
     db.refresh(db_prop)
+    
+    # Registrar en el historial de la propiedad
+    registrar_historial_propiedad(
+        db,
+        id_propiedad=db_prop.id_propiedad,
+        accion="creado",
+        descripcion=f"Propiedad creada en estado: {db_prop.status}"
+    )
+    db.commit()
+    db.refresh(db_prop)
     return db_prop
+
 
 @router.put("/{id_propiedad}", response_model=schemas.PropiedadResponse)
 def update_propiedad(id_propiedad: int, propiedad: schemas.PropiedadUpdate, db: Session = Depends(get_db)):
@@ -93,8 +128,25 @@ def update_propiedad(id_propiedad: int, propiedad: schemas.PropiedadUpdate, db: 
     if not db_prop:
         raise HTTPException(status_code=404, detail="Propiedad no encontrada")
     
-    for key, value in propiedad.model_dump(exclude_unset=True).items():
-        setattr(db_prop, key, value)
+    update_data = propiedad.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        prev_value = getattr(db_prop, key)
+        if prev_value != value:
+            if _values_equivalent(prev_value, value):
+                continue
+                
+            setattr(db_prop, key, value)
+            
+            # Registrar en el historial de la propiedad
+            registrar_historial_propiedad(
+                db,
+                id_propiedad=id_propiedad,
+                accion="actualizado",
+                descripcion=f"Campo '{key}' modificado",
+                campo=key,
+                valor_anterior=str(prev_value) if prev_value is not None else None,
+                valor_nuevo=str(value) if value is not None else None
+            )
         
     calcular_campos_propiedad(db_prop)
     try:
@@ -107,6 +159,7 @@ def update_propiedad(id_propiedad: int, propiedad: schemas.PropiedadUpdate, db: 
         )
     db.refresh(db_prop)
     return db_prop
+
 
 @router.delete("/{id_propiedad}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_propiedad(id_propiedad: int, db: Session = Depends(get_db)):
@@ -188,4 +241,105 @@ def delete_multimedia(id_propiedad: int, id_media: int, db: Session = Depends(ge
     db.commit()
     logger.info("Multimedia eliminado: id_media=%s de propiedad id=%s", id_media, id_propiedad)
     return None
+
+
+# --- Rutas del Expediente ---
+
+@router.get("/{id_propiedad}/expediente", response_model=schemas.PropiedadExpedienteResponse)
+def get_expediente(id_propiedad: int, db: Session = Depends(get_db)):
+    """Retorna la información consolidada del expediente de la propiedad."""
+    db_prop = db.query(models.Propiedad).filter(models.Propiedad.id_propiedad == id_propiedad).first()
+    if not db_prop:
+        raise HTTPException(status_code=404, detail="Propiedad no encontrada")
+    return db_prop
+
+
+@router.post("/{id_propiedad}/notas", response_model=schemas.PropiedadNotaResponse, status_code=status.HTTP_201_CREATED)
+def add_nota(id_propiedad: int, nota: schemas.PropiedadNotaCreate, db: Session = Depends(get_db)):
+    """Agrega una nota al expediente de la propiedad."""
+    db_prop = db.query(models.Propiedad).filter(models.Propiedad.id_propiedad == id_propiedad).first()
+    if not db_prop:
+        raise HTTPException(status_code=404, detail="Propiedad no encontrada")
+    
+    db_nota = models.PropiedadNota(id_propiedad=id_propiedad, **nota.model_dump())
+    db.add(db_nota)
+    
+    registrar_historial_propiedad(
+        db,
+        id_propiedad=id_propiedad,
+        accion="nota_agregada",
+        descripcion="Se ha agregado una nota al expediente."
+    )
+    db.commit()
+    db.refresh(db_nota)
+    return db_nota
+
+
+@router.post("/{id_propiedad}/actividades", response_model=schemas.PropiedadActividadResponse, status_code=status.HTTP_201_CREATED)
+def add_actividad(id_propiedad: int, actividad: schemas.PropiedadActividadCreate, db: Session = Depends(get_db)):
+    """Registra una actividad en el expediente de la propiedad."""
+    db_prop = db.query(models.Propiedad).filter(models.Propiedad.id_propiedad == id_propiedad).first()
+    if not db_prop:
+        raise HTTPException(status_code=404, detail="Propiedad no encontrada")
+    
+    db_act = models.PropiedadActividad(id_propiedad=id_propiedad, **actividad.model_dump())
+    db.add(db_act)
+    
+    registrar_historial_propiedad(
+        db,
+        id_propiedad=id_propiedad,
+        accion="actividad_registrada",
+        descripcion=f"Se registró una actividad: {db_act.tipo}."
+    )
+    db.commit()
+    db.refresh(db_act)
+    return db_act
+
+
+@router.post("/{id_propiedad}/documentos", response_model=schemas.PropiedadDocumentoResponse, status_code=status.HTTP_201_CREATED)
+def add_documento(id_propiedad: int, documento: schemas.PropiedadDocumentoCreate, db: Session = Depends(get_db)):
+    """Asocia un documento legal/técnico al expediente de la propiedad."""
+    db_prop = db.query(models.Propiedad).filter(models.Propiedad.id_propiedad == id_propiedad).first()
+    if not db_prop:
+        raise HTTPException(status_code=404, detail="Propiedad no encontrada")
+    
+    db_doc = models.PropiedadDocumento(id_propiedad=id_propiedad, **documento.model_dump())
+    db.add(db_doc)
+    
+    registrar_historial_propiedad(
+        db,
+        id_propiedad=id_propiedad,
+        accion="documento_agregado",
+        descripcion=f"Documento subido: {db_doc.nombre_archivo}."
+    )
+    db.commit()
+    db.refresh(db_doc)
+    return db_doc
+
+
+@router.delete("/{id_propiedad}/documentos/{id_documento}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_documento(id_propiedad: int, id_documento: int, db: Session = Depends(get_db)):
+    """Elimina un documento del expediente de la propiedad."""
+    db_prop = db.query(models.Propiedad).filter(models.Propiedad.id_propiedad == id_propiedad).first()
+    if not db_prop:
+        raise HTTPException(status_code=404, detail="Propiedad no encontrada")
+    
+    db_doc = db.query(models.PropiedadDocumento).filter(
+        models.PropiedadDocumento.id_documento == id_documento,
+        models.PropiedadDocumento.id_propiedad == id_propiedad
+    ).first()
+    if not db_doc:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    
+    db.delete(db_doc)
+    
+    registrar_historial_propiedad(
+        db,
+        id_propiedad=id_propiedad,
+        accion="documento_eliminado",
+        descripcion=f"Documento eliminado: {db_doc.nombre_archivo}."
+    )
+    db.commit()
+    return None
+
 

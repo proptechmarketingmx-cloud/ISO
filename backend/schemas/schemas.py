@@ -307,6 +307,80 @@ class PropiedadMultimediaResponse(PropiedadMultimediaBase):
         from_attributes = True
 
 
+# --- Propiedad Dossier (Expediente) ---
+
+class PropiedadActividadBase(BaseModel):
+    tipo: str = Field(..., max_length=50)
+    descripcion: Optional[str] = None
+    id_asesor: Optional[int] = None
+
+class PropiedadActividadCreate(PropiedadActividadBase):
+    pass
+
+class PropiedadActividadResponse(PropiedadActividadBase):
+    id_actividad: int
+    id_propiedad: int
+    fecha: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PropiedadNotaBase(BaseModel):
+    contenido: str
+
+class PropiedadNotaCreate(PropiedadNotaBase):
+    pass
+
+class PropiedadNotaResponse(PropiedadNotaBase):
+    id_nota: int
+    id_propiedad: int
+    fecha: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PropiedadDocumentoBase(BaseModel):
+    nombre_archivo: str = Field(..., max_length=255)
+    tipo_documento: Optional[str] = Field(None, max_length=100)
+    url: str
+
+class PropiedadDocumentoCreate(PropiedadDocumentoBase):
+    pass
+
+class PropiedadDocumentoResponse(PropiedadDocumentoBase):
+    id_documento: int
+    id_propiedad: int
+    fecha_subida: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PropiedadHistorialResponse(BaseModel):
+    id_historial: int
+    id_propiedad: int
+    fecha: datetime
+    usuario: Optional[str] = None
+    accion: str = Field(..., max_length=100)
+    descripcion: Optional[str] = None
+    campo: Optional[str] = None
+    valor_anterior: Optional[str] = None
+    valor_nuevo: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class PropiedadExpedienteResponse(PropiedadResponse):
+    actividades: List[PropiedadActividadResponse] = []
+    documentos: List[PropiedadDocumentoResponse] = []
+    notas: List[PropiedadNotaResponse] = []
+    historial: List[PropiedadHistorialResponse] = []
+
+
+
 # ── Leads ───────────────────────────────────────────
 
 class LeadBase(BaseModel):
