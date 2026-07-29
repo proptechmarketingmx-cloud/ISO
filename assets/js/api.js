@@ -1,20 +1,30 @@
-/**
- * ISO Platform — API Client
- * Cliente HTTP centralizado para comunicarse con el backend FastAPI.
- * Usa una ruta relativa para que funcione tanto en desarrollo como en producción.
- */
+import { auth } from '/assets/js/auth.js';
 
 const API_BASE = '/api';
 
 async function request(method, path, body = null) {
-  const opts = {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-  };
+  const headers = { 'Content-Type': 'application/json' };
+  const token = auth.getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const opts = { method, headers };
   if (body) opts.body = JSON.stringify(body);
 
   try {
     const res = await fetch(`${API_BASE}${path}`, opts);
+
+    if (res.status === 401 && !path.startsWith('/auth/login')) {
+      auth.logout();
+      throw new Error('Sesión expirada. Por favor inicie sesión de nuevo.');
+    }
+
+    if (res.status === 403) {
+      const err = await res.json().catch(() => ({ detail: 'Acceso no autorizado' }));
+      throw new Error(err.detail || 'No tiene permisos para realizar esta acción');
+    }
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Error desconocido' }));
       const detail = err.detail;

@@ -10,6 +10,7 @@ class Asesor(Base):
     __tablename__ = "asesores"
 
     id_asesor     = Column(Integer, primary_key=True, index=True)
+    id_tenant     = Column(Integer, ForeignKey("tenants.id_tenant", ondelete="CASCADE"), nullable=True, index=True)
     nombre        = Column(String(100), nullable=False)
     apellidos     = Column(String(100), nullable=False)
     telefono      = Column(String(20),  nullable=True)
@@ -26,6 +27,7 @@ class Propiedad(Base):
     __tablename__ = "propiedades"
 
     id_propiedad = Column(Integer, primary_key=True, index=True)
+    id_tenant    = Column(Integer, ForeignKey("tenants.id_tenant", ondelete="CASCADE"), nullable=True, index=True)
 
     # ── General ───────────────────────────────────────────────────────────────
     titulo          = Column(String(200), nullable=False)

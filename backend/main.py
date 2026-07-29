@@ -2,9 +2,13 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import engine, Base
-from backend.routes import asesores, propiedades, cna, kpis, dashboard, cliente_routes
+from backend.routes import (
+    asesores, propiedades, cna, kpis, dashboard, cliente_routes,
+    auth, roles, usuarios
+)
 import backend.models.cliente  # noqa: F401 — registra tablas del módulo Clientes
-import backend.models.models  # noqa: F401 — registra tablas compartidas
+import backend.models.models   # noqa: F401 — registra tablas compartidas
+import backend.models.auth     # noqa: F401 — registra tablas de RBAC y Multi-Tenancy
 
 # Crear tablas en la base de datos de manera automática
 Base.metadata.create_all(bind=engine)
@@ -35,6 +39,9 @@ app.add_middleware(
 
 # Incluir routers bajo el prefijo /api
 
+app.include_router(auth.router, prefix="/api")
+app.include_router(roles.router, prefix="/api")
+app.include_router(usuarios.router, prefix="/api")
 app.include_router(cliente_routes.router, prefix="/api")
 app.include_router(asesores.router, prefix="/api")
 app.include_router(propiedades.router, prefix="/api")

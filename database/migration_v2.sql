@@ -269,3 +269,137 @@ CREATE TABLE IF NOT EXISTS propiedades_historial (
   FOREIGN KEY (id_propiedad) REFERENCES propiedades(id_propiedad) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 6. MULTI-TENANCY & RBAC (Roles y Permisos)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Columna id_tenant en tablas principales
+ALTER TABLE asesores    ADD COLUMN id_tenant INT NULL AFTER id_asesor;
+ALTER TABLE clientes    ADD COLUMN id_tenant INT NULL AFTER id_cliente;
+ALTER TABLE propiedades ADD COLUMN id_tenant INT NULL AFTER id_propiedad;
+
+-- Tabla Tenants (Agencias)
+CREATE TABLE IF NOT EXISTS tenants (
+  id_tenant   INT AUTO_INCREMENT PRIMARY KEY,
+  nombre      VARCHAR(100) NOT NULL,
+  slug        VARCHAR(50)  NOT NULL UNIQUE,
+  plan        VARCHAR(50)  DEFAULT 'pro',
+  activo      BOOLEAN      DEFAULT TRUE,
+  created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Tabla Usuarios
+CREATE TABLE IF NOT EXISTS usuarios (
+  id_usuario    INT AUTO_INCREMENT PRIMARY KEY,
+  id_tenant     INT NULL,
+  id_asesor     INT NULL,
+  email         VARCHAR(100) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  nombre        VARCHAR(100) NULL,
+  activo        BOOLEAN      DEFAULT TRUE,
+  ultimo_acceso TIMESTAMP    NULL,
+  created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_tenant) REFERENCES tenants(id_tenant) ON DELETE CASCADE,
+  FOREIGN KEY (id_asesor) REFERENCES asesores(id_asesor) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- Tabla Roles
+CREATE TABLE IF NOT EXISTS roles (
+  id_rol      INT AUTO_INCREMENT PRIMARY KEY,
+  id_tenant   INT NULL COMMENT 'NULL indica Rol Global de Sistema',
+  nombre      VARCHAR(50)  NOT NULL,
+  slug        VARCHAR(50)  NOT NULL,
+  descripcion VARCHAR(255) NULL,
+  es_sistema  BOOLEAN      DEFAULT FALSE,
+  created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_tenant_slug (id_tenant, slug)
+) ENGINE=InnoDB;
+
+-- Tabla Permisos
+CREATE TABLE IF NOT EXISTS permisos (
+  id_permiso    INT AUTO_INCREMENT PRIMARY KEY,
+  id_rol        INT         NOT NULL,
+  modulo        VARCHAR(50) NOT NULL,
+  puede_crear   BOOLEAN     DEFAULT FALSE,
+  puede_leer    BOOLEAN     DEFAULT FALSE,
+  puede_editar  BOOLEAN     DEFAULT FALSE,
+  puede_eliminar BOOLEAN    DEFAULT FALSE,
+  restricciones JSON        NULL COMMENT 'eg: {"solo_propios": true}',
+  updated_at    TIMESTAMP   DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_by    INT         NULL,
+  FOREIGN KEY (id_rol) REFERENCES roles(id_rol) ON DELETE CASCADE,
+  UNIQUE KEY unique_rol_modulo (id_rol, modulo)
+) ENGINE=InnoDB;
+
+-- Tabla Usuario-Roles (M:N)
+CREATE TABLE IF NOT EXISTS usuario_roles (
+  id_usuario  INT NOT NULL,
+  id_rol      INT NOT NULL,
+  assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  assigned_by INT NULL,
+  PRIMARY KEY (id_usuario, id_rol),
+  FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  FOREIGN KEY (id_rol)     REFERENCES roles(id_rol)     ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Auditoría de Roles y Permisos
+CREATE TABLE IF NOT EXISTS auditoria_roles (
+  id_audit         INT AUTO_INCREMENT PRIMARY KEY,
+  id_usuario       INT NULL,
+  id_tenant        INT NULL,
+  entidad          VARCHAR(50)  NOT NULL,
+  id_entidad       INT          NOT NULL,
+  accion           VARCHAR(50)  NOT NULL,
+  snapshot_antes   JSON         NULL,
+  snapshot_despues JSON         NULL,
+  created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Seed Data Inicial para RBAC
+INSERT IGNORE INTO tenants (id_tenant, nombre, slug, plan, activo) VALUES (1, 'Agencia Demo', 'demo', 'enterprise', 1);
+
+-- Roles base de sistema (id_tenant = 1 para la agencia demo o NULL para plantilla)
+INSERT IGNORE INTO roles (id_rol, id_tenant, nombre, slug, descripcion, es_sistema) VALUES
+(1, 1, 'Super Admin', 'super_admin', 'Acceso total sin restricciones', 1),
+(2, 1, 'Admin de Agencia', 'admin', 'Control total de la agencia', 1),
+(3, 1, 'Gerente', 'gerente', 'Supervisión de equipo y reportes', 1),
+(4, 1, 'Vendedor', 'vendedor', 'Gestión de leads y propiedades asignadas', 1),
+(5, 1, 'Invitado', 'invitado', 'Acceso de solo lectura limitado', 1);
+
+-- Permisos para Super Admin (Acceso total a todo)
+INSERT IGNORE INTO permisos (id_rol, modulo, puede_crear, puede_leer, puede_editar, puede_eliminar) VALUES
+(1, 'clientes', 1, 1, 1, 1), (1, 'clientes_ajenos', 1, 1, 1, 1), (1, 'propiedades', 1, 1, 1, 1),
+(1, 'cna', 1, 1, 1, 1), (1, 'red_contactos', 1, 1, 1, 1), (1, 'kpis', 1, 1, 1, 1),
+(1, 'asesores', 1, 1, 1, 1), (1, 'usuarios', 1, 1, 1, 1), (1, 'facturacion', 1, 1, 1, 1), (1, 'config_tenant', 1, 1, 1, 1);
+
+-- Permisos para Admin de Agencia
+INSERT IGNORE INTO permisos (id_rol, modulo, puede_crear, puede_leer, puede_editar, puede_eliminar) VALUES
+(2, 'clientes', 1, 1, 1, 1), (2, 'clientes_ajenos', 1, 1, 1, 1), (2, 'propiedades', 1, 1, 1, 1),
+(2, 'cna', 1, 1, 1, 1), (2, 'red_contactos', 1, 1, 1, 1), (2, 'kpis', 1, 1, 1, 1),
+(2, 'asesores', 1, 1, 1, 1), (2, 'usuarios', 1, 1, 1, 1), (2, 'facturacion', 1, 1, 1, 1), (2, 'config_tenant', 1, 1, 1, 1);
+
+-- Permisos para Gerente
+INSERT IGNORE INTO permisos (id_rol, modulo, puede_crear, puede_leer, puede_editar, puede_eliminar, restricciones) VALUES
+(3, 'clientes', 1, 1, 1, 0), (3, 'clientes_ajenos', 0, 1, 0, 0), (3, 'propiedades', 1, 1, 1, 0),
+(3, 'cna', 0, 1, 0, 0), (3, 'red_contactos', 0, 1, 0, 0), (3, 'kpis', 0, 1, 0, 0),
+(3, 'asesores', 0, 1, 0, 0), (3, 'usuarios', 0, 0, 0, 0), (3, 'facturacion', 0, 0, 0, 0), (3, 'config_tenant', 0, 0, 0, 0);
+
+-- Permisos para Vendedor
+INSERT IGNORE INTO permisos (id_rol, modulo, puede_crear, puede_leer, puede_editar, puede_eliminar, restricciones) VALUES
+(4, 'clientes', 1, 1, 1, 0, '{"solo_propios": true}'), (4, 'clientes_ajenos', 0, 0, 0, 0),
+(4, 'propiedades', 0, 1, 1, 0, '{"solo_asignadas": true}'), (4, 'cna', 0, 1, 0, 0),
+(4, 'red_contactos', 0, 1, 0, 0), (4, 'kpis', 0, 1, 0, 0, '{"solo_propios": true}'),
+(4, 'asesores', 0, 1, 0, 0), (4, 'usuarios', 0, 0, 0, 0), (4, 'facturacion', 0, 0, 0, 0), (4, 'config_tenant', 0, 0, 0, 0);
+
+-- Permisos para Invitado
+INSERT IGNORE INTO permisos (id_rol, modulo, puede_crear, puede_leer, puede_editar, puede_eliminar) VALUES
+(5, 'clientes', 0, 1, 0, 0), (5, 'propiedades', 0, 1, 0, 0), (5, 'cna', 0, 1, 0, 0),
+(5, 'red_contactos', 0, 0, 0, 0), (5, 'kpis', 0, 0, 0, 0), (5, 'asesores', 0, 0, 0, 0);
+
+-- Usuario Administrador por defecto (password demo: admin123 -> bcrypt)
+INSERT IGNORE INTO usuarios (id_usuario, id_tenant, email, password_hash, nombre, activo) VALUES
+(1, 1, 'admin@demo.com', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'Admin Demo', 1);
+
+INSERT IGNORE INTO usuario_roles (id_usuario, id_rol) VALUES (1, 2);
+
+

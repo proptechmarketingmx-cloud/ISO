@@ -10,6 +10,7 @@ class Cliente(Base):
     __tablename__ = "clientes"
 
     id_cliente = Column(Integer, primary_key=True, index=True)
+    id_tenant  = Column(Integer, ForeignKey("tenants.id_tenant", ondelete="CASCADE"), nullable=True, index=True)
 
     # ── Identificación ───────────────────────────────────────────────────────
     nombre              = Column(String(100),  nullable=False)

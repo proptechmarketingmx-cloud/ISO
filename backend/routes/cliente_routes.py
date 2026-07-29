@@ -13,6 +13,8 @@ from backend.schemas.cliente import (
     ClienteActividadCreate, ClienteActividadResponse,
     ClienteDocumentoCreate, ClienteDocumentoResponse
 )
+from backend.auth.dependencies import get_current_user, require_permission
+from backend.models.auth import Usuario
 
 router = APIRouter(prefix="/clientes", tags=["Clientes"])
 
@@ -45,13 +47,19 @@ def _dias_para_cumple(birth: date, hoy: date) -> int:
 # ── Rutas ───────────────────────────────────────────────────────────────────
 
 @router.get("/kpis", tags=["KPIs"])
-def get_kpis(db: Session = Depends(get_db)):
+def get_kpis(
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("kpis", "leer"))
+):
     """KPIs automáticos del módulo de clientes."""
     return get_kpis_clientes_service(db)
 
 
 @router.get("/cumpleanos", tags=["Clientes"])
-def get_cumpleanos(db: Session = Depends(get_db)):
+def get_cumpleanos(
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("clientes", "leer"))
+):
     """Devuelve clientes que cumplen años hoy y en los próximos 30 días."""
     hoy = date.today()
     ventana = hoy + timedelta(days=30)
@@ -98,18 +106,27 @@ def get_clientes(
     limit: int = 100,
     search: Optional[str] = None,
     estado: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("clientes", "leer"))
 ):
     return ClienteService.get_clientes(db, skip=skip, limit=limit, search=search, estado=estado)
 
 
 @router.post("", response_model=ClienteResponse, status_code=status.HTTP_201_CREATED)
-def create_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
+def create_cliente(
+    cliente: ClienteCreate,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("clientes", "crear"))
+):
     return ClienteService.create_cliente(db, cliente)
 
 
 @router.get("/{id_cliente}/expediente", response_model=ExpedienteResponse)
-def get_expediente(id_cliente: int, db: Session = Depends(get_db)):
+def get_expediente(
+    id_cliente: int,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("clientes", "leer"))
+):
     cliente = ClienteService.get_cliente_by_id(db, id_cliente)
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
@@ -117,7 +134,11 @@ def get_expediente(id_cliente: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{id_cliente}", response_model=ClienteResponse)
-def get_cliente(id_cliente: int, db: Session = Depends(get_db)):
+def get_cliente(
+    id_cliente: int,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("clientes", "leer"))
+):
     cliente = ClienteService.get_cliente_by_id(db, id_cliente)
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
@@ -125,7 +146,12 @@ def get_cliente(id_cliente: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{id_cliente}", response_model=ClienteResponse)
-def update_cliente(id_cliente: int, cliente: ClienteUpdate, db: Session = Depends(get_db)):
+def update_cliente(
+    id_cliente: int,
+    cliente: ClienteUpdate,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("clientes", "editar"))
+):
     db_cliente = ClienteService.update_cliente(db, id_cliente, cliente)
     if not db_cliente:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
@@ -133,7 +159,11 @@ def update_cliente(id_cliente: int, cliente: ClienteUpdate, db: Session = Depend
 
 
 @router.delete("/{id_cliente}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_cliente(id_cliente: int, db: Session = Depends(get_db)):
+def delete_cliente(
+    id_cliente: int,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("clientes", "eliminar"))
+):
     success, reason = ClienteService.delete_cliente(db, id_cliente)
     if not success:
         if reason == "Cliente no encontrado":
