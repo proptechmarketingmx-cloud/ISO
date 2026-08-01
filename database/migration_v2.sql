@@ -293,15 +293,21 @@ CREATE TABLE IF NOT EXISTS usuarios (
   id_usuario    INT AUTO_INCREMENT PRIMARY KEY,
   id_tenant     INT NULL,
   id_asesor     INT NULL,
+  id_manager    INT NULL,
   email         VARCHAR(100) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   nombre        VARCHAR(100) NULL,
   activo        BOOLEAN      DEFAULT TRUE,
   ultimo_acceso TIMESTAMP    NULL,
   created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (id_tenant) REFERENCES tenants(id_tenant) ON DELETE CASCADE,
-  FOREIGN KEY (id_asesor) REFERENCES asesores(id_asesor) ON DELETE SET NULL
+  FOREIGN KEY (id_tenant)  REFERENCES tenants(id_tenant) ON DELETE CASCADE,
+  FOREIGN KEY (id_asesor)  REFERENCES asesores(id_asesor) ON DELETE SET NULL,
+  FOREIGN KEY (id_manager) REFERENCES usuarios(id_usuario) ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+-- Columna id_manager para migraciones sobre tablas existentes
+ALTER TABLE usuarios ADD COLUMN id_manager INT NULL AFTER id_asesor;
+
 
 -- Tabla Roles
 CREATE TABLE IF NOT EXISTS roles (

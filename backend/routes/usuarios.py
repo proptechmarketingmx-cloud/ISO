@@ -41,6 +41,7 @@ def create_usuario(
     user = Usuario(
         id_tenant=current_user.id_tenant,
         id_asesor=data.id_asesor,
+        id_manager=data.id_manager,
         email=data.email,
         password_hash=get_password_hash(data.password),
         nombre=data.nombre,
@@ -63,7 +64,7 @@ def create_usuario(
         entidad="usuario",
         id_entidad=user.id_usuario,
         accion="create",
-        snapshot_despues={"email": user.email, "nombre": user.nombre, "roles": data.roles_ids}
+        snapshot_despues={"email": user.email, "nombre": user.nombre, "id_manager": user.id_manager, "roles": data.roles_ids}
     )
     db.add(auditoria)
     db.commit()
@@ -79,7 +80,7 @@ def update_usuario(
     current_user: Usuario = Depends(get_current_user),
     _perm=Depends(require_permission("usuarios", "editar"))
 ):
-    """Actualiza datos de un usuario (nombre, contraseña, activo, roles)."""
+    """Actualiza datos de un usuario (nombre, contraseña, activo, id_asesor, id_manager, roles)."""
     user = db.query(Usuario).filter(Usuario.id_usuario == id_usuario, Usuario.id_tenant == current_user.id_tenant).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
@@ -90,6 +91,10 @@ def update_usuario(
         user.password_hash = get_password_hash(data.password)
     if data.activo is not None:
         user.activo = data.activo
+    if data.id_asesor is not None:
+        user.id_asesor = data.id_asesor
+    if data.id_manager is not None:
+        user.id_manager = data.id_manager
 
     if data.roles_ids is not None:
         # Reemplazar roles

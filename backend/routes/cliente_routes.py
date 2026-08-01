@@ -13,10 +13,11 @@ from backend.schemas.cliente import (
     ClienteActividadCreate, ClienteActividadResponse,
     ClienteDocumentoCreate, ClienteDocumentoResponse
 )
-from backend.auth.dependencies import get_current_user, require_permission
+from backend.auth.dependencies import get_current_user, require_permission, get_data_scope
 from backend.models.auth import Usuario
 
 router = APIRouter(prefix="/clientes", tags=["Clientes"])
+
 
 
 # ── Utilidades internas ─────────────────────────────────────────────────────
@@ -107,9 +108,11 @@ def get_clientes(
     search: Optional[str] = None,
     estado: Optional[str] = None,
     db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
     _perm = Depends(require_permission("clientes", "leer"))
 ):
-    return ClienteService.get_clientes(db, skip=skip, limit=limit, search=search, estado=estado)
+    scope_info = get_data_scope(current_user, db)
+    return ClienteService.get_clientes(db, skip=skip, limit=limit, search=search, estado=estado, scope_info=scope_info)
 
 
 @router.post("", response_model=ClienteResponse, status_code=status.HTTP_201_CREATED)

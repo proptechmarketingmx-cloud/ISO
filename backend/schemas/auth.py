@@ -57,6 +57,7 @@ class UserProfile(BaseModel):
     id_usuario: int
     id_tenant: Optional[int] = None
     id_asesor: Optional[int] = None
+    id_manager: Optional[int] = None
     email: str
     nombre: Optional[str] = None
     activo: bool
@@ -72,6 +73,7 @@ class UserCreate(BaseModel):
     nombre: str
     id_tenant: Optional[int] = 1
     id_asesor: Optional[int] = None
+    id_manager: Optional[int] = None
     roles_ids: List[int] = []
 
 
@@ -79,6 +81,8 @@ class UserUpdate(BaseModel):
     nombre: Optional[str] = None
     password: Optional[str] = None
     activo: Optional[bool] = None
+    id_asesor: Optional[int] = None
+    id_manager: Optional[int] = None
     roles_ids: Optional[List[int]] = None
 
 

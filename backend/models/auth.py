@@ -34,6 +34,7 @@ class Usuario(Base):
     id_usuario    = Column(Integer, primary_key=True, index=True)
     id_tenant     = Column(Integer, ForeignKey("tenants.id_tenant", ondelete="CASCADE"), nullable=True, index=True)
     id_asesor     = Column(Integer, ForeignKey("asesores.id_asesor", ondelete="SET NULL"), nullable=True, index=True)
+    id_manager    = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True, index=True)
     email         = Column(String(100), nullable=False, unique=True, index=True)
     password_hash = Column(String(255), nullable=False)
     nombre        = Column(String(100), nullable=True)
@@ -43,6 +44,7 @@ class Usuario(Base):
 
     tenant        = relationship("Tenant", back_populates="usuarios")
     asesor        = relationship("Asesor")
+    manager       = relationship("Usuario", remote_side=[id_usuario], backref="subordinados")
     roles         = relationship("Rol", secondary="usuario_roles", back_populates="usuarios")
 
 

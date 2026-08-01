@@ -153,8 +153,20 @@ class ClienteService:
             )
 
     @staticmethod
-    def get_clientes(db: Session, skip: int = 0, limit: int = 100, search: Optional[str] = None, estado: Optional[str] = None) -> List[Cliente]:
+    def get_clientes(db: Session, skip: int = 0, limit: int = 100, search: Optional[str] = None, estado: Optional[str] = None, scope_info: Optional[dict] = None) -> List[Cliente]:
         query = db.query(Cliente)
+
+        if scope_info:
+            if scope_info.get("id_tenant"):
+                query = query.filter(or_(Cliente.id_tenant == scope_info["id_tenant"], Cliente.id_tenant.is_(None)))
+
+            allowed = scope_info.get("allowed_asesores_ids")
+            if allowed is not None:
+                if allowed:
+                    query = query.filter(Cliente.id_asesor.in_(allowed))
+                else:
+                    return []
+
         if search:
             search_filter = f"%{search}%"
             query = query.filter(
@@ -169,7 +181,7 @@ class ClienteService:
             )
         if estado:
             query = query.filter(Cliente.estado_cliente == estado)
-        
+
         return query.order_by(Cliente.fecha_registro.desc()).offset(skip).limit(limit).all()
 
     @staticmethod

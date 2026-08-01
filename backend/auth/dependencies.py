@@ -103,3 +103,33 @@ def check_tenant_isolation(current_user: Usuario, target_tenant_id: Optional[int
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acceso denegado: aislamiento multi-tenant violado"
         )
+
+
+def get_data_scope(current_user: Usuario, db: Session) -> Dict[str, Any]:
+    """
+    Calcula el alcance (scope) de visualización/gestión de datos para el usuario actual.
+    Retorna:
+      - scope: 'all' | 'team' | 'own'
+      - allowed_asesores_ids: List[int] | None (None significa sin filtro, ver todo)
+      - id_tenant: ID del tenant del usuario
+    """
+    user_roles_slugs = [r.slug for r in current_user.roles]
+
+    if "super_admin" in user_roles_slugs or "admin" in user_roles_slugs:
+        return {"scope": "all", "allowed_asesores_ids": None, "id_tenant": current_user.id_tenant}
+
+    if "gerente" in user_roles_slugs:
+        # Obtener los IDs de asesores que le reportan a este usuario (id_manager == current_user.id_usuario)
+        team_users = db.query(Usuario).filter(
+            Usuario.id_manager == current_user.id_usuario,
+            Usuario.id_asesor.isnot(None)
+        ).all()
+        team_asesores_ids = [u.id_asesor for u in team_users]
+        if current_user.id_asesor:
+            team_asesores_ids.append(current_user.id_asesor)
+        return {"scope": "team", "allowed_asesores_ids": list(set(team_asesores_ids)), "id_tenant": current_user.id_tenant}
+
+    # Asesor / Vendedor (o roles restrictivos): solo ve sus propios datos
+    own_asesores_ids = [current_user.id_asesor] if current_user.id_asesor else []
+    return {"scope": "own", "allowed_asesores_ids": own_asesores_ids, "id_tenant": current_user.id_tenant}
+
