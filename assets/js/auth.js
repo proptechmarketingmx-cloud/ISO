@@ -6,11 +6,8 @@
 
 /** Slugs de roles de sistema — deben coincidir 1:1 con la BD y backend/auth/constants.py */
 export const SYSTEM_ROLES = Object.freeze({
-  SUPER_ADMIN: 'super_admin',
-  ADMIN:       'admin',
-  GERENTE:     'gerente',
-  VENDEDOR:    'vendedor',
-  INVITADO:    'invitado',
+  ADMIN:  'admin',
+  ASESOR: 'asesor',
 });
 
 /** Slugs de módulos de permisos — deben coincidir con backend/auth/constants.py */

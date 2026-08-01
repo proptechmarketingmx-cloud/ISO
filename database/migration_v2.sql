@@ -361,51 +361,47 @@ CREATE TABLE IF NOT EXISTS auditoria_roles (
   created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- Seed Data Inicial para RBAC
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Seed Data Inicial para RBAC (2 roles: admin, asesor)
+-- ─────────────────────────────────────────────────────────────────────────────
 INSERT IGNORE INTO tenants (id_tenant, nombre, slug, plan, activo) VALUES (1, 'Agencia Demo', 'demo', 'enterprise', 1);
 
--- Roles base de sistema (id_tenant = 1 para la agencia demo o NULL para plantilla)
+-- Solo 2 roles de sistema
 INSERT IGNORE INTO roles (id_rol, id_tenant, nombre, slug, descripcion, es_sistema) VALUES
-(1, 1, 'Super Admin', 'super_admin', 'Acceso total sin restricciones', 1),
-(2, 1, 'Admin de Agencia', 'admin', 'Control total de la agencia', 1),
-(3, 1, 'Gerente', 'gerente', 'Supervisión de equipo y reportes', 1),
-(4, 1, 'Vendedor', 'vendedor', 'Gestión de leads y propiedades asignadas', 1),
-(5, 1, 'Invitado', 'invitado', 'Acceso de solo lectura limitado', 1);
+(1, 1, 'Admin', 'admin', 'Control total de la agencia', 1),
+(2, 1, 'Asesor', 'asesor', 'Gestión de propios leads y propiedades asignadas', 1);
 
--- Permisos para Super Admin (Acceso total a todo)
+-- Permisos para Admin (CRUD completo en todos los módulos)
 INSERT IGNORE INTO permisos (id_rol, modulo, puede_crear, puede_leer, puede_editar, puede_eliminar) VALUES
-(1, 'clientes', 1, 1, 1, 1), (1, 'clientes_ajenos', 1, 1, 1, 1), (1, 'propiedades', 1, 1, 1, 1),
-(1, 'cna', 1, 1, 1, 1), (1, 'red_contactos', 1, 1, 1, 1), (1, 'kpis', 1, 1, 1, 1),
-(1, 'asesores', 1, 1, 1, 1), (1, 'usuarios', 1, 1, 1, 1), (1, 'facturacion', 1, 1, 1, 1), (1, 'config_tenant', 1, 1, 1, 1);
+(1, 'clientes',        1, 1, 1, 1),
+(1, 'clientes_ajenos', 1, 1, 1, 1),
+(1, 'propiedades',     1, 1, 1, 1),
+(1, 'cna',             1, 1, 1, 1),
+(1, 'red_contactos',   1, 1, 1, 1),
+(1, 'kpis',            1, 1, 1, 1),
+(1, 'asesores',        1, 1, 1, 1),
+(1, 'usuarios',        1, 1, 1, 1),
+(1, 'facturacion',     1, 1, 1, 1),
+(1, 'config_tenant',   1, 1, 1, 1);
 
--- Permisos para Admin de Agencia
-INSERT IGNORE INTO permisos (id_rol, modulo, puede_crear, puede_leer, puede_editar, puede_eliminar) VALUES
-(2, 'clientes', 1, 1, 1, 1), (2, 'clientes_ajenos', 1, 1, 1, 1), (2, 'propiedades', 1, 1, 1, 1),
-(2, 'cna', 1, 1, 1, 1), (2, 'red_contactos', 1, 1, 1, 1), (2, 'kpis', 1, 1, 1, 1),
-(2, 'asesores', 1, 1, 1, 1), (2, 'usuarios', 1, 1, 1, 1), (2, 'facturacion', 1, 1, 1, 1), (2, 'config_tenant', 1, 1, 1, 1);
-
--- Permisos para Gerente
+-- Permisos para Asesor (solo sus propios registros; sin acceso a admin, facturación, config)
 INSERT IGNORE INTO permisos (id_rol, modulo, puede_crear, puede_leer, puede_editar, puede_eliminar, restricciones) VALUES
-(3, 'clientes', 1, 1, 1, 0), (3, 'clientes_ajenos', 0, 1, 0, 0), (3, 'propiedades', 1, 1, 1, 0),
-(3, 'cna', 0, 1, 0, 0), (3, 'red_contactos', 0, 1, 0, 0), (3, 'kpis', 0, 1, 0, 0),
-(3, 'asesores', 0, 1, 0, 0), (3, 'usuarios', 0, 0, 0, 0), (3, 'facturacion', 0, 0, 0, 0), (3, 'config_tenant', 0, 0, 0, 0);
+(2, 'clientes',        1, 1, 1, 0, '{"solo_propios": true}'),
+(2, 'clientes_ajenos', 0, 0, 0, 0, NULL),
+(2, 'propiedades',     0, 1, 1, 0, '{"solo_asignadas": true}'),
+(2, 'cna',             0, 1, 0, 0, NULL),
+(2, 'red_contactos',   0, 1, 0, 0, NULL),
+(2, 'kpis',            0, 1, 0, 0, '{"solo_propios": true}'),
+(2, 'asesores',        0, 1, 0, 0, NULL),
+(2, 'usuarios',        0, 0, 0, 0, NULL),
+(2, 'facturacion',     0, 0, 0, 0, NULL),
+(2, 'config_tenant',   0, 0, 0, 0, NULL);
 
--- Permisos para Vendedor
-INSERT IGNORE INTO permisos (id_rol, modulo, puede_crear, puede_leer, puede_editar, puede_eliminar, restricciones) VALUES
-(4, 'clientes', 1, 1, 1, 0, '{"solo_propios": true}'), (4, 'clientes_ajenos', 0, 0, 0, 0),
-(4, 'propiedades', 0, 1, 1, 0, '{"solo_asignadas": true}'), (4, 'cna', 0, 1, 0, 0),
-(4, 'red_contactos', 0, 1, 0, 0), (4, 'kpis', 0, 1, 0, 0, '{"solo_propios": true}'),
-(4, 'asesores', 0, 1, 0, 0), (4, 'usuarios', 0, 0, 0, 0), (4, 'facturacion', 0, 0, 0, 0), (4, 'config_tenant', 0, 0, 0, 0);
-
--- Permisos para Invitado
-INSERT IGNORE INTO permisos (id_rol, modulo, puede_crear, puede_leer, puede_editar, puede_eliminar) VALUES
-(5, 'clientes', 0, 1, 0, 0), (5, 'propiedades', 0, 1, 0, 0), (5, 'cna', 0, 1, 0, 0),
-(5, 'red_contactos', 0, 0, 0, 0), (5, 'kpis', 0, 0, 0, 0), (5, 'asesores', 0, 0, 0, 0);
-
--- Usuario Administrador por defecto (password demo: admin123 -> bcrypt)
+-- Usuario Administrador por defecto (password: admin123 → bcrypt)
 INSERT IGNORE INTO usuarios (id_usuario, id_tenant, email, password_hash, nombre, activo) VALUES
 (1, 1, 'admin@demo.com', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'Admin Demo', 1);
 
-INSERT IGNORE INTO usuario_roles (id_usuario, id_rol) VALUES (1, 2);
+INSERT IGNORE INTO usuario_roles (id_usuario, id_rol) VALUES (1, 1);
+
 
 

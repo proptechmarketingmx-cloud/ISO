@@ -71,12 +71,19 @@ const NAV_CONFIG = [
     href: '/kpis/asesores/',
     icon: `<svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`
   },
+  { type: 'section', label: 'ADMINISTRACIÓN' },
+  {
+    id: 'usuarios', label: 'Usuarios y Roles', modulo: 'usuarios',
+    href: '/usuarios/',
+    icon: `<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+  },
 ];
 
 function getCurrentId() {
   const path = window.location.pathname;
   const search = window.location.search;
   if (path.startsWith('/dashboard'))         return 'dashboard';
+  if (path.startsWith('/usuarios'))          return 'usuarios';
   if (path.startsWith('/clientes'))          return 'clientes';
   if (path.startsWith('/propiedades'))       return 'propiedades';
   if (path.startsWith('/cna_clientes'))      return 'red-clientes';

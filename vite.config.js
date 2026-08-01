@@ -20,6 +20,7 @@ export default defineConfig({
       input: {
         main:                   resolve(__dirname, 'index.html'),
         dashboard:              resolve(__dirname, 'dashboard/index.html'),
+        usuarios:               resolve(__dirname, 'usuarios/index.html'),
         clientes:               resolve(__dirname, 'clientes/index.html'),
         propiedades:            resolve(__dirname, 'propiedades/index.html'),
         matching:               resolve(__dirname, 'matching/index.html'),

@@ -10,8 +10,8 @@ from backend.auth.constants import SystemRole
 router = APIRouter(prefix="/roles", tags=["Gestión de Roles y Permisos"])
 
 
-def _is_super_admin(user: Usuario) -> bool:
-    return SystemRole.SUPER_ADMIN in [r.slug for r in user.roles]
+def _is_admin(user: Usuario) -> bool:
+    return SystemRole.ADMIN in [r.slug for r in user.roles]
 
 
 def _permiso_to_dict(p: Permiso) -> dict:
@@ -168,12 +168,11 @@ def update_rol(
             detail="No se puede cambiar el nombre de un rol de sistema"
         )
 
-    # Protección de permisos en roles de sistema: solo Super Admin puede reemplazar la matriz completa
-    if rol.es_sistema and data.permisos is not None and not _is_super_admin(current_user):
+    # Protección de permisos en roles de sistema: solo Admin puede reemplazar la matriz completa
+    if rol.es_sistema and data.permisos is not None and not _is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Solo el Super Admin puede reemplazar la matriz de permisos de un rol de sistema. "
-                   "Los Admins de agencia pueden contactar a soporte para ajustes de permisos base."
+            detail="Solo el Admin puede reemplazar la matriz de permisos de un rol de sistema."
         )
 
     # Snapshot anterior (basado en objetos persistidos con id_permiso reales)

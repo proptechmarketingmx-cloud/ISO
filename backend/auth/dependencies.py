@@ -61,7 +61,7 @@ def require_permission(modulo: str, accion: str) -> Callable:
     def permission_checker(current_user: Usuario = Depends(get_current_user)) -> Dict[str, Any]:
         user_roles_slugs = [r.slug for r in current_user.roles]
 
-        if SystemRole.SUPER_ADMIN in user_roles_slugs or SystemRole.ADMIN in user_roles_slugs:
+        if SystemRole.ADMIN in user_roles_slugs:
             return {"permitido": True, "restricciones": None, "es_admin": True}
 
         # Buscar permisos para el módulo solicitado en los roles del usuario
@@ -93,10 +93,10 @@ def require_permission(modulo: str, accion: str) -> Callable:
 
 
 def check_tenant_isolation(current_user: Usuario, target_tenant_id: Optional[int]):
-    """Verifica que el usuario no acceda a datos de otro tenant a menos que sea Super Admin."""
+    """Verifica que el usuario no acceda a datos de otro tenant a menos que sea Admin."""
     user_roles_slugs = [r.slug for r in current_user.roles]
-    if SystemRole.SUPER_ADMIN in user_roles_slugs:
-        return  # Super admin puede ver todo
+    if SystemRole.ADMIN in user_roles_slugs:
+        return  # Admin puede ver todo su tenant
 
     if target_tenant_id is not None and current_user.id_tenant != target_tenant_id:
         raise HTTPException(
@@ -107,29 +107,16 @@ def check_tenant_isolation(current_user: Usuario, target_tenant_id: Optional[int
 
 def get_data_scope(current_user: Usuario, db: Session) -> Dict[str, Any]:
     """
-    Calcula el alcance (scope) de visualización/gestión de datos para el usuario actual.
-    Retorna:
-      - scope: 'all' | 'team' | 'own'
-      - allowed_asesores_ids: List[int] | None (None significa sin filtro, ver todo)
-      - id_tenant: ID del tenant del usuario
+    Calcula el alcance de datos según el rol del usuario.
+      - Admin  → scope 'all' (ve todo el tenant, sin filtro de asesor)
+      - Asesor → scope 'own' (solo sus propios registros vía id_asesor)
     """
     user_roles_slugs = [r.slug for r in current_user.roles]
 
-    if SystemRole.SUPER_ADMIN in user_roles_slugs or SystemRole.ADMIN in user_roles_slugs:
+    if SystemRole.ADMIN in user_roles_slugs:
         return {"scope": "all", "allowed_asesores_ids": None, "id_tenant": current_user.id_tenant}
 
-    if SystemRole.GERENTE in user_roles_slugs:
-        # Obtener los IDs de asesores que le reportan a este usuario (id_manager == current_user.id_usuario)
-        team_users = db.query(Usuario).filter(
-            Usuario.id_manager == current_user.id_usuario,
-            Usuario.id_asesor.isnot(None)
-        ).all()
-        team_asesores_ids = [u.id_asesor for u in team_users]
-        if current_user.id_asesor:
-            team_asesores_ids.append(current_user.id_asesor)
-        return {"scope": "team", "allowed_asesores_ids": list(set(team_asesores_ids)), "id_tenant": current_user.id_tenant}
-
-    # Asesor / Vendedor (o roles restrictivos): solo ve sus propios datos
+    # Asesor: solo ve sus propios registros asignados
     own_asesores_ids = [current_user.id_asesor] if current_user.id_asesor else []
     return {"scope": "own", "allowed_asesores_ids": own_asesores_ids, "id_tenant": current_user.id_tenant}
 
