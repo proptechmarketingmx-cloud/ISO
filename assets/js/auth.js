@@ -4,6 +4,29 @@
  * y verificación de permisos RBAC en el frontend.
  */
 
+/** Slugs de roles de sistema — deben coincidir 1:1 con la BD y backend/auth/constants.py */
+export const SYSTEM_ROLES = Object.freeze({
+  SUPER_ADMIN: 'super_admin',
+  ADMIN:       'admin',
+  GERENTE:     'gerente',
+  VENDEDOR:    'vendedor',
+  INVITADO:    'invitado',
+});
+
+/** Slugs de módulos de permisos — deben coincidir con backend/auth/constants.py */
+export const SYSTEM_MODULES = Object.freeze({
+  CLIENTES:        'clientes',
+  CLIENTES_AJENOS: 'clientes_ajenos',
+  PROPIEDADES:     'propiedades',
+  CNA:             'cna',
+  RED_CONTACTOS:   'red_contactos',
+  KPIS:            'kpis',
+  ASESORES:        'asesores',
+  USUARIOS:        'usuarios',
+  FACTURACION:     'facturacion',
+  CONFIG_TENANT:   'config_tenant',
+});
+
 const TOKEN_KEY = 'iso_access_token';
 const USER_KEY  = 'iso_user_profile';
 
@@ -51,6 +74,7 @@ export const auth = {
   /**
    * Verifica si el usuario tiene permiso para una acción en un módulo.
    * Acciones: 'crear', 'leer', 'editar', 'eliminar'.
+   * Usa SYSTEM_ROLES y SYSTEM_MODULES para evitar strings mágicos en el sitio de llamada.
    */
   hasPermission(modulo, accion = 'leer') {
     const user = this.getUser();
@@ -58,7 +82,7 @@ export const auth = {
 
     // Super Admin o Admin tienen acceso total
     const rolesSlugs = (user.roles || []).map(r => r.slug);
-    if (rolesSlugs.includes('super_admin') || rolesSlugs.includes('admin')) {
+    if (rolesSlugs.includes(SYSTEM_ROLES.SUPER_ADMIN) || rolesSlugs.includes(SYSTEM_ROLES.ADMIN)) {
       return true;
     }
 

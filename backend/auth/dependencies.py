@@ -5,6 +5,7 @@ from typing import Callable, Optional, Dict, Any
 from backend.database import get_db
 from backend.auth.jwt import decode_token
 from backend.models.auth import Usuario, Rol, Permiso
+from backend.auth.constants import SystemRole
 
 security = HTTPBearer(auto_error=False)
 
@@ -58,10 +59,9 @@ def require_permission(modulo: str, accion: str) -> Callable:
     Acciones válidas: 'crear', 'leer', 'editar', 'eliminar'.
     """
     def permission_checker(current_user: Usuario = Depends(get_current_user)) -> Dict[str, Any]:
-        # Verificar si es Super Admin (rol slug: 'super_admin') o Admin de Agencia ('admin')
         user_roles_slugs = [r.slug for r in current_user.roles]
 
-        if "super_admin" in user_roles_slugs or "admin" in user_roles_slugs:
+        if SystemRole.SUPER_ADMIN in user_roles_slugs or SystemRole.ADMIN in user_roles_slugs:
             return {"permitido": True, "restricciones": None, "es_admin": True}
 
         # Buscar permisos para el módulo solicitado en los roles del usuario
@@ -95,7 +95,7 @@ def require_permission(modulo: str, accion: str) -> Callable:
 def check_tenant_isolation(current_user: Usuario, target_tenant_id: Optional[int]):
     """Verifica que el usuario no acceda a datos de otro tenant a menos que sea Super Admin."""
     user_roles_slugs = [r.slug for r in current_user.roles]
-    if "super_admin" in user_roles_slugs:
+    if SystemRole.SUPER_ADMIN in user_roles_slugs:
         return  # Super admin puede ver todo
 
     if target_tenant_id is not None and current_user.id_tenant != target_tenant_id:
@@ -115,10 +115,10 @@ def get_data_scope(current_user: Usuario, db: Session) -> Dict[str, Any]:
     """
     user_roles_slugs = [r.slug for r in current_user.roles]
 
-    if "super_admin" in user_roles_slugs or "admin" in user_roles_slugs:
+    if SystemRole.SUPER_ADMIN in user_roles_slugs or SystemRole.ADMIN in user_roles_slugs:
         return {"scope": "all", "allowed_asesores_ids": None, "id_tenant": current_user.id_tenant}
 
-    if "gerente" in user_roles_slugs:
+    if SystemRole.GERENTE in user_roles_slugs:
         # Obtener los IDs de asesores que le reportan a este usuario (id_manager == current_user.id_usuario)
         team_users = db.query(Usuario).filter(
             Usuario.id_manager == current_user.id_usuario,
