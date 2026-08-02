@@ -20,22 +20,37 @@ async function request(method, path, body = null) {
       throw new Error('Sesión expirada. Por favor inicie sesión de nuevo.');
     }
 
+    const contentType = res.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+
     if (res.status === 403) {
-      const err = await res.json().catch(() => ({ detail: 'Acceso no autorizado' }));
+      const err = isJson ? await res.json().catch(() => ({})) : {};
       throw new Error(err.detail || 'No tiene permisos para realizar esta acción');
     }
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: 'Error desconocido' }));
-      const detail = err.detail;
-      const message = typeof detail === 'string'
-        ? detail
-        : Array.isArray(detail)
-          ? detail.map((item) => item.msg || item.message || JSON.stringify(item)).join('; ')
-          : `HTTP ${res.status}`;
+      let message = `Error en el servidor (HTTP ${res.status})`;
+      if (isJson) {
+        const err = await res.json().catch(() => ({}));
+        const detail = err.detail;
+        if (typeof detail === 'string') {
+          message = detail;
+        } else if (Array.isArray(detail)) {
+          message = detail.map((item) => item.msg || item.message || JSON.stringify(item)).join('; ');
+        }
+      } else if (res.status === 404) {
+        message = `Endpoint no encontrado (${path}). Verifica que el backend esté ejecutándose en el puerto 8000.`;
+      }
       throw new Error(message);
     }
-    return res.status === 204 ? null : await res.json();
+
+    if (res.status === 204) return null;
+
+    if (!isJson) {
+      throw new Error(`Respuesta no válida del servidor backend (no es JSON). Verifica que el servidor FastAPI esté iniciado.`);
+    }
+
+    return await res.json();
   } catch (e) {
     console.error(`[API] ${method} ${path} →`, e.message);
     throw e;

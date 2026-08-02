@@ -25,18 +25,22 @@ import { auth } from '/assets/js/auth.js';
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
-    if (!res.ok) {
-      // 401 / 403 / cualquier error → limpiar y redirigir
-      auth.logout();
+    const contentType = res.headers.get('content-type') || '';
+    if (!res.ok || !contentType.includes('application/json')) {
+      // Si la respuesta no es 200 OK o no es JSON (eg. HTML de error 404 del servidor de dev)
+      if (res.status === 401 || res.status === 403) {
+        auth.logout();
+        return;
+      }
+      // Si es un error de red o servidor, no cerrar sesión abruptamente
       return;
     }
 
-    // Refrescar perfil local con los datos más recientes (incluyendo roles actualizados)
-    const user = await res.json();
-    auth.setUser(user);
-
+    const user = await res.json().catch(() => null);
+    if (user) {
+      auth.setUser(user);
+    }
   } catch {
-    // Error de red: en este caso permitimos continuar — el API guard del backend
-    // devolverá 401 cuando se haga la primera petición de datos.
+    // Error de conexión o red: continuar sin cerrar sesión
   }
 })();
