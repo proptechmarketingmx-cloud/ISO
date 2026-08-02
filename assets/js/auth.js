@@ -77,9 +77,9 @@ export const auth = {
     const user = this.getUser();
     if (!user) return false;
 
-    // Super Admin o Admin tienen acceso total
+    // Admin tiene acceso total
     const rolesSlugs = (user.roles || []).map(r => r.slug);
-    if (rolesSlugs.includes(SYSTEM_ROLES.SUPER_ADMIN) || rolesSlugs.includes(SYSTEM_ROLES.ADMIN)) {
+    if (rolesSlugs.includes(SYSTEM_ROLES.ADMIN)) {
       return true;
     }
 

@@ -10,23 +10,32 @@ from backend.auth.constants import SystemRole
 security = HTTPBearer(auto_error=False)
 
 
+from fastapi import Depends, HTTPException, status, Request
+
 def get_current_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db)
 ) -> Usuario:
-    """Extrae y valida el JWT del header Authorization. Retorna el modelo Usuario."""
-    if not credentials or not credentials.credentials:
+    """Extrae y valida el JWT del header Authorization o Cookie HttpOnly. Retorna el modelo Usuario."""
+    raw_token = None
+    if credentials and credentials.credentials:
+        raw_token = credentials.credentials
+    else:
+        raw_token = request.cookies.get("access_token")
+
+    if not raw_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="No se proporcionó un token de autenticación",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    payload = decode_token(credentials.credentials)
+    payload = decode_token(raw_token)
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido o expirado",
+            detail="Token inválido, revocado o expirado",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -49,6 +58,10 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario no encontrado o inactivo",
         )
+
+    # Almacenar payload y raw token en el request state para el logout
+    request.state.jwt_payload = payload
+    request.state.raw_token = raw_token
 
     return user
 
