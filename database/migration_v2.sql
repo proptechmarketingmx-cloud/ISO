@@ -397,9 +397,9 @@ INSERT IGNORE INTO permisos (id_rol, modulo, puede_crear, puede_leer, puede_edit
 (2, 'facturacion',     0, 0, 0, 0, NULL),
 (2, 'config_tenant',   0, 0, 0, 0, NULL);
 
--- Usuario Administrador por defecto (password: admin123 → bcrypt)
+-- Usuario Administrador por defecto (password: admin123 → bcrypt 4.x)
 INSERT IGNORE INTO usuarios (id_usuario, id_tenant, email, password_hash, nombre, activo) VALUES
-(1, 1, 'admin@demo.com', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'Admin Demo', 1);
+(1, 1, 'admin@demo.com', '$2b$12$TDiHqgGTmb0UrbtkIa0VkuEzt0H/y9bqp0n2o9ymQdz3gN6A8e6gG', 'Admin Demo', 1);
 
 INSERT IGNORE INTO usuario_roles (id_usuario, id_rol) VALUES (1, 1);
 
