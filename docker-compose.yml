@@ -1,55 +1,22 @@
-version: '3.8'
-
 services:
-  db:
-    image: mysql:8.0
-    container_name: iso_mysql_db
-    command: --default-authentication-plugin=mysql_native_password
+  postgres:
+    image: postgres:16-alpine
+    container_name: iso_postgres_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: iso_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: iso_p2p
     ports:
-      - "3306:3306"
+      # Exclusivamente para la máquina local (127.0.0.1), no expuesto a internet ni 0.0.0.0
+      - "127.0.0.1:5432:5432"
     volumes:
-      - db_data:/var/lib/mysql
-      # Copia el schema para inicializar la base de datos automáticamente
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psecret"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d iso_p2p"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    container_name: iso_backend
-    restart: always
-    environment:
-      - DB_DIALECT=mysql
-      - DB_USER=root
-      - DB_PASSWORD=secret
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_NAME=iso_db
-    ports:
-      - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: iso_frontend
-    restart: always
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-
 volumes:
-  db_data:
+  postgres_data:

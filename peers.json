@@ -1,0 +1,7 @@
+[
+  {
+    "name": "Nodo-B",
+    "url": "http://localhost:3001",
+    "intervalSeconds": 30
+  }
+]
