@@ -3,17 +3,29 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-DB_DIALECT = os.getenv("DB_DIALECT", "mysql")
-DB_USER = os.getenv("DB_USER", "root" if DB_DIALECT == "mysql" else "postgres")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "" if DB_DIALECT == "mysql" else "postgres")
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "3306" if DB_DIALECT == "mysql" else "5432")
-DB_NAME = os.getenv("DB_NAME", "iso_db" if DB_DIALECT == "mysql" else "iso_dev")
+RAW_DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("MYSQL_URL") or os.getenv("POSTGRESQL_URL")
 
-if DB_DIALECT == "mysql":
-    DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+if RAW_DATABASE_URL:
+    if RAW_DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = RAW_DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif RAW_DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = RAW_DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+    elif RAW_DATABASE_URL.startswith("mysql://"):
+        DATABASE_URL = RAW_DATABASE_URL.replace("mysql://", "mysql+pymysql://", 1)
+    else:
+        DATABASE_URL = RAW_DATABASE_URL
 else:
-    DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    DB_DIALECT = os.getenv("DB_DIALECT", "mysql")
+    DB_USER = os.getenv("DB_USER", "root" if DB_DIALECT == "mysql" else "postgres")
+    DB_PASSWORD = os.getenv("DB_PASSWORD", "" if DB_DIALECT == "mysql" else "postgres")
+    DB_HOST = os.getenv("DB_HOST", "localhost")
+    DB_PORT = os.getenv("DB_PORT", "3306" if DB_DIALECT == "mysql" else "5432")
+    DB_NAME = os.getenv("DB_NAME", "iso_db" if DB_DIALECT == "mysql" else "iso_dev")
+
+    if DB_DIALECT == "mysql":
+        DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    else:
+        DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 engine = create_engine(
     DATABASE_URL,
