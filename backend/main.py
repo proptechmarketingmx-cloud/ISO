@@ -1,4 +1,7 @@
 import os
+import time
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import engine, Base
@@ -10,17 +13,33 @@ import backend.models.cliente  # noqa: F401 — registra tablas del módulo Clie
 import backend.models.models   # noqa: F401 — registra tablas compartidas
 import backend.models.auth     # noqa: F401 — registra tablas de RBAC y Multi-Tenancy
 
-# Crear tablas en la base de datos de manera automática
-Base.metadata.create_all(bind=engine)
+logger = logging.getLogger("uvicorn.error")
 
-# Aplicar migraciones incrementales automáticas (si corresponde a MySQL)
-from backend.database_migration import run_database_migrations
-run_database_migrations(engine)
+def _init_db(retries: int = 10, delay: float = 3.0):
+    """Espera a que MySQL esté listo y luego crea las tablas y aplica migraciones."""
+    from backend.database_migration import run_database_migrations
+    for attempt in range(1, retries + 1):
+        try:
+            Base.metadata.create_all(bind=engine)
+            run_database_migrations(engine)
+            logger.info("✅ Base de datos inicializada correctamente.")
+            return
+        except Exception as exc:
+            logger.warning(f"⏳ Intento {attempt}/{retries}: BD no disponible ({exc}). Reintentando en {delay}s...")
+            time.sleep(delay)
+    logger.error("❌ No se pudo conectar a la base de datos tras varios intentos. La app continuará sin inicializar las tablas.")
+
+@asynccontextmanager
+async def lifespan(app_instance: FastAPI):
+    _init_db()
+    yield
+
 
 app = FastAPI(
     title="ISO API",
     description="Backend API para la plataforma inmobiliaria ISO y su sistema CNA",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 # Configurar middleware de CORS
