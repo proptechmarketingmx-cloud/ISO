@@ -163,10 +163,20 @@ form.addEventListener('submit', async (e) => {
       body: JSON.stringify({ email, password })
     });
 
-    const data = await res.json();
+    const contentType = res.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    const data = isJson ? await res.json() : null;
 
     if (!res.ok) {
-      throw new Error(data.detail || 'Error al iniciar sesión');
+      let msg = data?.detail || `Error del servidor (HTTP ${res.status})`;
+      if (!isJson) {
+        msg = `El backend devolvió una respuesta no válida (HTTP ${res.status}). Asegúrate de que el servidor FastAPI esté iniciado en http://localhost:8000`;
+      }
+      throw new Error(msg);
+    }
+
+    if (!data || !data.access_token) {
+      throw new Error('Respuesta de autenticación no válida.');
     }
 
     auth.setToken(data.access_token);
@@ -175,8 +185,11 @@ form.addEventListener('submit', async (e) => {
     const meRes = await fetch('/api/auth/me', {
       headers: { 'Authorization': `Bearer ${data.access_token}` }
     });
-    const meData = await meRes.json();
-    auth.setUser(meData);
+    const meContentType = meRes.headers.get('content-type') || '';
+    if (meRes.ok && meContentType.includes('application/json')) {
+      const meData = await meRes.json();
+      auth.setUser(meData);
+    }
 
     window.location.href = '/dashboard/';
 
