@@ -38,15 +38,18 @@ export function isAllowedSyncIp(clientIp: string | null): boolean {
  * Valida tanto el Token de Sincronización compartido como la IP de origen del peer.
  */
 export function validateSyncSecurity(req: NextRequest): { valid: boolean; error?: string; status?: number } {
-  // 1. Obtener la IP del cliente desde headers de proxy o socket
+  // 1. Obtener la IP del cliente (req.ip, x-forwarded-for, o x-real-ip) de forma segura
   const forwardedFor = req.headers.get('x-forwarded-for');
   const realIp = req.headers.get('x-real-ip');
-  const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : (realIp || '127.0.0.1');
+  
+  // Extraer IP real sin asumir 127.0.0.1 por defecto (Fail Closed)
+  const clientIp = req.ip || (forwardedFor ? forwardedFor.split(',')[0].trim() : (realIp ? realIp.trim() : null));
 
-  if (!isAllowedSyncIp(clientIp)) {
+  if (!clientIp || !isAllowedSyncIp(clientIp)) {
+    const displayIp = clientIp || 'indeterminada';
     return {
       valid: false,
-      error: `Acceso denegado. La IP de origen (${clientIp}) no pertenece al rango de Tailscale (100.64.0.0/10) ni a localhost.`,
+      error: `Acceso denegado. La IP de origen (${displayIp}) no pertenece al rango de Tailscale (100.64.0.0/10) ni a localhost.`,
       status: 403,
     };
   }

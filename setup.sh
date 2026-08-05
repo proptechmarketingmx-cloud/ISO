@@ -6,6 +6,20 @@ echo "  ISO P2P Platform — Script de Inicio Automático"
 echo "==================================================="
 echo ""
 
+# 0. Verificación y Creación del archivo .env desde .env.example
+if [ ! -f ".env" ]; then
+    if [ -f ".env.example" ]; then
+        echo "📄 [INFO] Creando archivo .env a partir de .env.example..."
+        cp .env.example .env
+        echo "⚠️ [ADVERTENCIA IMPORTANTE] Se creó el archivo .env."
+        echo "Por favor modifica SYNC_TOKEN en el archivo .env por un token secreto único antes de conectar en producción."
+        echo ""
+    else
+        echo "❌ [ERROR] No se encontró .env ni .env.example."
+        exit 1
+    fi
+fi
+
 # 1. Verificación de Node.js
 if ! command -v node &> /dev/null; then
     echo "❌ [ERROR] Node.js no está instalado."
@@ -43,11 +57,11 @@ docker compose up -d
 echo "Esperando 5 segundos a que la base de datos esté lista..."
 sleep 5
 
-# 6. Preparar Prisma
+# 6. Preparar Prisma con migraciones versionadas
 echo ""
-echo "🗄️ [4/6] Generando cliente de Prisma y aplicando esquema..."
+echo "🗄️ [4/6] Generando cliente de Prisma y aplicando migraciones versionadas..."
 npx prisma generate
-npx prisma db push --accept-data-loss
+npx prisma migrate deploy
 
 # 7. Compilar aplicación Next.js
 echo ""

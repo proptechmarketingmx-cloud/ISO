@@ -7,6 +7,21 @@ echo   ISO P2P Platform — Script de Inicio Automatico
 echo ===================================================
 echo.
 
+REM 0. Verificación y Creación del archivo .env desde .env.example
+if not exist ".env" (
+    if exist ".env.example" (
+        echo [INFO] Creando archivo .env a partir de .env.example...
+        copy ".env.example" ".env" >nul
+        echo [ADVERTENCIA IMPORTANTE] Se creo el archivo .env.
+        echo Por favor modifica SYNC_TOKEN en el archivo .env por un token secreto unico antes de sincronizar en producción.
+        echo.
+    ) else (
+        echo [ERROR] No se encontro .env ni .env.example.
+        pause
+        exit /b 1
+    )
+)
+
 REM 1. Verificacion de Node.js
 where node >nul 2>nul
 if %errorlevel% neq 0 (
@@ -61,13 +76,13 @@ if %errorlevel% neq 0 (
 echo Esperando a que PostgreSQL este listo...
 timeout /t 5 /nobreak >nul
 
-REM 6. Preparar Prisma
+REM 6. Preparar Prisma con migraciones versionadas de producción
 echo.
-echo [4/6] Generando cliente de Prisma y aplicando migraciones...
+echo [4/6] Generando cliente de Prisma y aplicando migraciones versionadas...
 call npx prisma generate
-call npx prisma db push --accept-data-loss
+call npx prisma migrate deploy
 if %errorlevel% neq 0 (
-    echo [ERROR] Fallo la inicializacion de Prisma.
+    echo [ERROR] Fallo la aplicacion de migraciones de Prisma.
     pause
     exit /b 1
 )
