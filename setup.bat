@@ -7,19 +7,22 @@ echo   ISO P2P Platform — Script de Inicio Automatico
 echo ===================================================
 echo.
 
-REM 0. Verificación y Creación del archivo .env desde .env.example
+REM 0. Verificación y Creación del archivo .env con DATABASE_URL por defecto
 if not exist ".env" (
     if exist ".env.example" (
         echo [INFO] Creando archivo .env a partir de .env.example...
         copy ".env.example" ".env" >nul
-        echo [ADVERTENCIA IMPORTANTE] Se creo el archivo .env.
-        echo Por favor modifica SYNC_TOKEN en el archivo .env por un token secreto unico antes de sincronizar en producción.
-        echo.
     ) else (
-        echo [ERROR] No se encontro .env ni .env.example.
-        pause
-        exit /b 1
+        echo [INFO] Creando archivo .env por defecto...
+        (
+            echo DATABASE_URL="postgresql://postgres:secret@localhost:5432/iso_p2p?schema=public"
+            echo SYNC_TOKEN="REEMPLAZAR_CON_TOKEN_SECRETO_UNICO"
+            echo PORT=3000
+        ) > ".env"
     )
+    echo [ADVERTENCIA IMPORTANTE] Se creo el archivo .env.
+    echo Por favor modifica SYNC_TOKEN en el archivo .env por un token secreto unico antes de sincronizar en produccion.
+    echo.
 )
 
 REM 1. Verificacion de Node.js
@@ -63,18 +66,15 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-REM 5. Levantar PostgreSQL con Docker Compose
+REM 5. Levantar PostgreSQL con Docker Compose y esperar al healthcheck real
 echo.
-echo [3/6] Iniciando contenedor PostgreSQL...
-call docker compose up -d
+echo [3/6] Iniciando contenedor PostgreSQL con healthcheck (docker compose up -d --wait)...
+call docker compose up -d --wait
 if %errorlevel% neq 0 (
-    echo [ERROR] Fallo al ejecutar docker compose up -d.
+    echo [ERROR] Fallo al iniciar PostgreSQL con docker compose.
     pause
     exit /b 1
 )
-
-echo Esperando a que PostgreSQL este listo...
-timeout /t 5 /nobreak >nul
 
 REM 6. Preparar Prisma con migraciones versionadas de producción
 echo.

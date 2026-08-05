@@ -52,11 +52,11 @@ async function syncWithPeer(peer: PeerConfig) {
 
     const pullData = await pullRes.json();
     if (pullData?.data) {
-      // Aplicar registros recibidos del peer en el nodo local (Post /api/sync handler o directamente)
+      // Aplicar registros recibidos del peer en el nodo local
       await applyIncomingData(pullData.data);
     }
 
-    // 2. PUSH: Obtener cambios locales recientes y enviarlos al Peer mediante POST /api/sync
+    // 2. PUSH: Obtener cambios locales recientes (incluyendo soft-deleted) y enviarlos al Peer
     const localChanges = await getLocalChanges(lastSync);
     const postUrl = `${peerUrl}/api/sync`;
     const pushRes = await fetch(postUrl, {
@@ -69,14 +69,13 @@ async function syncWithPeer(peer: PeerConfig) {
     });
 
     if (pushRes.ok) {
-      // Actualizar la fecha de última sincronización exitosa para este peer
       lastSyncTimestamps[peer.name] = new Date().toISOString();
       console.log(`[SyncEngine] Sincronización exitosa con peer "${peer.name}".`);
     } else {
       console.warn(`[SyncEngine] Push a peer "${peer.name}" falló con estatus HTTP ${pushRes.status}`);
     }
   } catch (error: any) {
-    // Tolerancia a fallos: Log de advertencia por peer inalcanzable sin detener el ciclo ni los demás peers
+    // Tolerancia a fallos: Log por peer inalcanzable u offline
     console.warn(`[SyncEngine] Peer "${peer.name}" (${peer.url}) inalcanzable u offline: ${error?.message}`);
   }
 }
@@ -84,26 +83,35 @@ async function syncWithPeer(peer: PeerConfig) {
 async function getLocalChanges(sinceIso: string) {
   const sinceDate = new Date(sinceIso);
 
+  // Retornar en el orden exacto: Usuario, Propiedad, Cliente, Nota
   const usuarios = await prisma.usuario.findMany({ where: { updatedAt: { gt: sinceDate } } });
-  const clientes = await prisma.cliente.findMany({ where: { updatedAt: { gt: sinceDate } } });
   const propiedades = await prisma.propiedad.findMany({ where: { updatedAt: { gt: sinceDate } } });
+  const clientes = await prisma.cliente.findMany({ where: { updatedAt: { gt: sinceDate } } });
   const notas = await prisma.nota.findMany({ where: { updatedAt: { gt: sinceDate } } });
 
-  return { usuarios, clientes, propiedades, notas };
+  return { usuarios, propiedades, clientes, notas };
 }
 
 async function applyIncomingData(payload: any) {
-  const models = ['usuario', 'cliente', 'propiedad', 'nota'] as const;
+  // Orden estricto de procesamiento para respetar dependencias de clave foránea
+  const orderedModels = [
+    { key: 'usuarios', modelName: 'usuario' },
+    { key: 'propiedades', modelName: 'propiedad' },
+    { key: 'clientes', modelName: 'cliente' },
+    { key: 'notas', modelName: 'nota' },
+  ] as const;
 
-  for (const model of models) {
-    const list = payload[model + 's'] || payload[model];
+  for (const { key, modelName } of orderedModels) {
+    const list = payload[key] || payload[modelName];
     if (Array.isArray(list)) {
       for (const item of list) {
-        const { id, createdAt, updatedAt, ...recordData } = item;
+        const { id, createdAt, updatedAt, deletedAt, ...recordData } = item;
         if (!id) continue;
 
-        const delegate = (prisma as any)[model];
-        const incomingDate = new Date(updatedAt || Date.now());
+        const delegate = (prisma as any)[modelName];
+        const incomingUpdatedAt = new Date(updatedAt || Date.now());
+        const incomingDeletedAt = deletedAt ? new Date(deletedAt) : null;
+
         const existing = await delegate.findUnique({ where: { id } });
 
         if (!existing) {
@@ -112,15 +120,17 @@ async function applyIncomingData(payload: any) {
               id,
               ...recordData,
               createdAt: createdAt ? new Date(createdAt) : new Date(),
-              updatedAt: incomingDate,
+              updatedAt: incomingUpdatedAt,
+              deletedAt: incomingDeletedAt,
             },
           });
-        } else if (incomingDate.getTime() > new Date(existing.updatedAt).getTime()) {
+        } else if (incomingUpdatedAt.getTime() > new Date(existing.updatedAt).getTime()) {
           await delegate.update({
             where: { id },
             data: {
               ...recordData,
-              updatedAt: incomingDate,
+              updatedAt: incomingUpdatedAt,
+              deletedAt: incomingDeletedAt,
             },
           });
         }

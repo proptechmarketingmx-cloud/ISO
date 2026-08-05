@@ -6,18 +6,22 @@ echo "  ISO P2P Platform — Script de Inicio Automático"
 echo "==================================================="
 echo ""
 
-# 0. Verificación y Creación del archivo .env desde .env.example
+# 0. Verificación y Creación del archivo .env con DATABASE_URL por defecto
 if [ ! -f ".env" ]; then
     if [ -f ".env.example" ]; then
         echo "📄 [INFO] Creando archivo .env a partir de .env.example..."
         cp .env.example .env
-        echo "⚠️ [ADVERTENCIA IMPORTANTE] Se creó el archivo .env."
-        echo "Por favor modifica SYNC_TOKEN en el archivo .env por un token secreto único antes de conectar en producción."
-        echo ""
     else
-        echo "❌ [ERROR] No se encontró .env ni .env.example."
-        exit 1
+        echo "📄 [INFO] Creando archivo .env por defecto..."
+        cat <<EOT > .env
+DATABASE_URL="postgresql://postgres:secret@localhost:5432/iso_p2p?schema=public"
+SYNC_TOKEN="REEMPLAZAR_CON_TOKEN_SECRETO_UNICO"
+PORT=3000
+EOT
     fi
+    echo "⚠️ [ADVERTENCIA IMPORTANTE] Se creó el archivo .env."
+    echo "Por favor modifica SYNC_TOKEN en el archivo .env por un token secreto único antes de conectar en producción."
+    echo ""
 fi
 
 # 1. Verificación de Node.js
@@ -50,12 +54,10 @@ echo ""
 echo "📦 [2/6] Instalando dependencias de Node.js..."
 npm install
 
-# 5. Levantar PostgreSQL
+# 5. Levantar PostgreSQL con healthcheck real (docker compose up -d --wait)
 echo ""
-echo "🐳 [3/6] Iniciando servidor PostgreSQL con Docker..."
-docker compose up -d
-echo "Esperando 5 segundos a que la base de datos esté lista..."
-sleep 5
+echo "🐳 [3/6] Iniciando servidor PostgreSQL con Docker (--wait para esperar healthcheck)..."
+docker compose up -d --wait
 
 # 6. Preparar Prisma con migraciones versionadas
 echo ""

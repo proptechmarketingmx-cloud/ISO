@@ -4,9 +4,9 @@ import Link from 'next/link';
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const usuarios = await prisma.usuario.findMany({ orderBy: { updatedAt: 'desc' } });
-  const clientes = await prisma.cliente.findMany({ orderBy: { updatedAt: 'desc' } });
-  const propiedades = await prisma.propiedad.findMany({ orderBy: { updatedAt: 'desc' } });
+  const usuarios = await prisma.usuario.findMany({ where: { deletedAt: null }, orderBy: { updatedAt: 'desc' } });
+  const clientes = await prisma.cliente.findMany({ where: { deletedAt: null }, orderBy: { updatedAt: 'desc' } });
+  const propiedades = await prisma.propiedad.findMany({ where: { deletedAt: null }, orderBy: { updatedAt: 'desc' } });
 
   return (
     <main className="max-w-6xl mx-auto p-8 space-y-8">
