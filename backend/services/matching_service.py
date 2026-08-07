@@ -122,7 +122,8 @@ def _score_economico(c: Cliente, p: Propiedad) -> tuple[float, dict]:
                 if pmin > 0 and precio < pmin * 0.01:
                     detalles["precio_anomalo"] = f"precio sospechoso ({precio:,.0f}), sin puntos"
                 else:
-                    ratio = min(1.0, pmin / precio)
+                    # Gradualidad: una propiedad al 50% del mínimo recibe 50% de los puntos.
+                    ratio = min(1.0, precio / pmin)
                     puntos += int(60 * ratio)
                     detalles["precio_por_debajo"] = f"{precio:,.0f} < {pmin:,.0f}"
             else:

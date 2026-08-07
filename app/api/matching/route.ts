@@ -55,6 +55,9 @@ export async function GET(req: NextRequest) {
       if (!propiedad) return NextResponse.json({ error: 'Propiedad no encontrada' }, { status: 404 });
 
       const clientes = await prisma.cliente.findMany({ where: { deletedAt: null } });
+      const advertencia = !['disponible', 'reservada'].includes(propiedad.status)
+        ? `Esta propiedad tiene status '${propiedad.status}' y no está activamente disponible. Los matches mostrados son informativos.`
+        : undefined;
       const matches = clientes.map((c) => {
         const res = calcularCompatibilidad(c, propiedad);
         return {
@@ -62,6 +65,7 @@ export async function GET(req: NextRequest) {
           nombre_completo: `${c.nombre} ${c.apellido_paterno} ${c.apellido_materno || ''}`.trim(),
           correo: c.correo,
           whatsapp: c.whatsapp,
+          ...(advertencia ? { advertencia } : {}),
           ...res,
         };
       });

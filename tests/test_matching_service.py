@@ -62,7 +62,7 @@ def test_score_economico_rewards_properties_below_the_minimum_budget():
 
     score, details = _score_economico(cliente, propiedad)
 
-    assert score == 60.0
+    assert score == 30.0
     assert details.get("precio_por_debajo")
 
 

@@ -83,7 +83,8 @@ export function scoreEconomico(c: Cliente, p: Propiedad): { score: number; detal
         if (pmin > 0 && precio < pmin * 0.01) {
           detalles.precio_anomalo = `precio sospechoso (${precio}), sin puntos`;
         } else {
-          const ratio = Math.min(1.0, pmin / precio);
+          // Gradualidad: una propiedad al 50% del mínimo recibe 50% de los puntos.
+          const ratio = Math.min(1.0, precio / pmin);
           puntos += Math.floor(60 * ratio);
           detalles.precio_por_debajo = `${precio} < ${pmin}`;
         }

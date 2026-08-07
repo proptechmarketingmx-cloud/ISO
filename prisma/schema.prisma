@@ -426,6 +426,10 @@ model Cliente {
   relacionesOrigen     RelacionCliente[] @relation("ClienteOrigen")
   relacionesDestino    RelacionCliente[] @relation("ClienteDestino")
 
+  @@unique([id_tenant, correo], name: "unique_cliente_tenant_correo")
+  @@unique([id_tenant, telefono_principal], name: "unique_cliente_tenant_telefono")
+  @@unique([id_tenant, whatsapp], name: "unique_cliente_tenant_whatsapp")
+  @@unique([id_tenant, curp], name: "unique_cliente_tenant_curp")
   @@map("clientes")
 }
 

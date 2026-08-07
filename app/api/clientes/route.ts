@@ -27,6 +27,6 @@ export async function POST(req: NextRequest) {
     const nuevoCliente = await crearCliente(body);
     return NextResponse.json(nuevoCliente, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Error al crear cliente' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Error al crear cliente' }, { status: error?.code === 'CLIENTE_DUPLICADO' ? 409 : 500 });
   }
 }

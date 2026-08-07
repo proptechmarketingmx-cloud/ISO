@@ -14,21 +14,29 @@ export function calcularEdadYGeneracion(fechaNacimientoStr?: string | null): { e
   }
 
   const birthYear = birth.getFullYear();
-  let generacion = null;
-  if (birthYear >= 1997 && birthYear <= 2012) generacion = 'Gen Z';
-  else if (birthYear >= 1981 && birthYear <= 1996) generacion = 'Millennial';
-  else if (birthYear >= 1965 && birthYear <= 1980) generacion = 'Gen X';
-  else if (birthYear >= 1946 && birthYear <= 1964) generacion = 'Baby Boomer';
-  else if (birthYear < 1946) generacion = 'Silent Generation';
+  let generacion: string | null = null;
+  if (birthYear > 2012) generacion = 'Generación Alfa';
+  else if (birthYear >= 1997) generacion = 'Generación Z';
+  else if (birthYear >= 1981) generacion = 'Millennials';
+  else if (birthYear >= 1965) generacion = 'Generación X';
+  else if (birthYear >= 1946) generacion = 'Baby Boomers';
+  else generacion = 'Generación Silenciosa';
 
   return { edad, generacion };
 }
 
 export function extraerLada(telefono?: string | null): string | null {
   if (!telefono) return null;
-  const clean = telefono.replace(/\D/g, '');
-  if (clean.length >= 10) return clean.substring(0, 3);
-  return null;
+  const normalized = telefono.trim();
+  if (normalized.startsWith('+')) {
+    const match = normalized.match(/^\+(\d{1,4})/);
+    return match ? `+${match[1]}` : null;
+  }
+  return '+52';
+}
+
+export class ClienteDuplicadoError extends Error {
+  code = 'CLIENTE_DUPLICADO';
 }
 
 export async function listarClientes(filtros: {
@@ -84,19 +92,32 @@ export async function listarClientes(filtros: {
 export async function crearCliente(data: any, tenantId?: number | null) {
   const { edad, generacion } = calcularEdadYGeneracion(data.fecha_nacimiento);
   const lada = extraerLada(data.telefono_principal || data.whatsapp);
+  const id_tenant = tenantId ?? data.id_tenant ?? null;
+  const normalized = {
+    correo: data.correo?.trim().toLowerCase() || null,
+    telefono_principal: data.telefono_principal?.trim() || null,
+    whatsapp: data.whatsapp?.trim() || null,
+    curp: data.curp?.trim().toUpperCase() || null,
+  };
 
-  return await prisma.cliente.create({
-    data: {
-      ...data,
-      id_tenant: tenantId || data.id_tenant || null,
-      edad: edad !== null ? edad : data.edad,
-      generacion: generacion || data.generacion,
-      lada: lada || data.lada,
-    },
-    include: {
-      asesor: true,
-    },
-  });
+  return prisma.$transaction(async (tx) => {
+    const duplicate = await tx.cliente.findFirst({
+      where: {
+        deletedAt: null,
+        ...(id_tenant !== null ? { id_tenant } : {}),
+        OR: Object.entries(normalized).filter(([, value]) => value).map(([key, value]) => ({ [key]: value })),
+      },
+      select: { correo: true, telefono_principal: true, whatsapp: true, curp: true },
+    });
+    if (duplicate) {
+      const fields = Object.entries(normalized).filter(([key, value]) => value && duplicate[key as keyof typeof duplicate] === value).map(([key]) => key);
+      throw new ClienteDuplicadoError(`Ya existe un cliente con ${fields.join(', ')}`);
+    }
+    return tx.cliente.create({
+      data: { ...data, ...normalized, id_tenant, edad: edad !== null ? edad : data.edad, generacion: generacion || data.generacion, lada: lada || data.lada },
+      include: { asesor: true },
+    });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
 
 export async function obtenerClientePorId(id: number) {
