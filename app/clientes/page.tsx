@@ -3,8 +3,9 @@ import Link from 'next/link';
 
 export const revalidate = 0;
 
-export default async function ClientesPage({ searchParams }: { searchParams: { busqueda?: string } }) {
+export default async function ClientesPage({ searchParams }: { searchParams: { busqueda?: string; page?: string } }) {
   const busqueda = searchParams.busqueda || '';
+  const page = Math.max(1, Number(searchParams.page || 1));
 
   const clientes = await prisma.cliente.findMany({
     where: {
@@ -22,6 +23,8 @@ export default async function ClientesPage({ searchParams }: { searchParams: { b
     },
     include: { asesor: true },
     orderBy: { updatedAt: 'desc' },
+    skip: (page - 1) * 50,
+    take: 50,
   });
 
   return (
@@ -48,6 +51,8 @@ export default async function ClientesPage({ searchParams }: { searchParams: { b
         </form>
       </div>
 
+      <div className="flex justify-between text-sm"><span className="text-slate-500">Página {page}</span><div className="flex gap-3">{page > 1 && <Link href={`/clientes?busqueda=${encodeURIComponent(busqueda)}&page=${page - 1}`} className="text-amber-400">Anterior</Link>}<Link href={`/clientes?busqueda=${encodeURIComponent(busqueda)}&page=${page + 1}`} className="text-amber-400">Siguiente</Link></div></div>
+
       <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-300">
@@ -72,7 +77,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: { b
                 clientes.map((c) => (
                   <tr key={c.id_cliente} className="hover:bg-slate-800/30 transition-colors">
                     <td className="px-6 py-4 font-semibold text-white">
-                      {c.nombre} {c.apellido_paterno} {c.apellido_materno || ''}
+                      <Link href={`/clientes/${c.id_cliente}`} className="hover:text-amber-400">{c.nombre} {c.apellido_paterno} {c.apellido_materno || ''}</Link>
                       {c.generacion && (
                         <span className="block text-xs font-normal text-slate-500 mt-0.5">{c.generacion} • {c.edad || '?'} años</span>
                       )}
@@ -93,12 +98,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: { b
                       {c.asesor ? `${c.asesor.nombre} ${c.asesor.apellidos}` : 'Sin asignar'}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link
-                        href={`/matching?cliente_id=${c.id_cliente}`}
-                        className="text-xs font-bold text-amber-400 hover:text-amber-300 hover:underline"
-                      >
-                        Matching →
-                      </Link>
+                      <div className="flex justify-end gap-3"><Link href={`/clientes/${c.id_cliente}`} className="text-xs font-bold text-slate-300 hover:text-white">Ver</Link><Link href={`/matching?cliente_id=${c.id_cliente}`} className="text-xs font-bold text-amber-400 hover:text-amber-300 hover:underline">Matching →</Link></div>
                     </td>
                   </tr>
                 ))

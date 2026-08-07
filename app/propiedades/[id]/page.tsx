@@ -1,0 +1,11 @@
+import { notFound } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+
+export const revalidate = 0;
+
+export default async function PropiedadDetailPage({ params }: { params: { id: string } }) {
+  const propiedad = await prisma.propiedad.findUnique({ where: { id_propiedad: Number(params.id) }, include: { asesor: true, multimedia: { orderBy: { orden: 'asc' } }, notas: { orderBy: { fecha: 'desc' } } } });
+  if (!propiedad || propiedad.deletedAt) notFound();
+  const principal = propiedad.multimedia.find((m) => m.es_principal) || propiedad.multimedia[0];
+  return <main className="max-w-5xl mx-auto p-6 md:p-8 space-y-6"><div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60">{principal && <img src={principal.url} alt={propiedad.titulo} className="h-64 w-full object-cover" />}<div className="p-6"><div className="flex justify-between gap-4"><div><p className="text-sm text-amber-400">{propiedad.tipo_operacion} · {propiedad.tipo}</p><h1 className="text-3xl font-extrabold">{propiedad.titulo}</h1><p className="text-slate-400 mt-1">{[propiedad.ciudad, propiedad.colonia].filter(Boolean).join(', ') || 'Ubicación no especificada'}</p></div><div className="text-2xl font-black text-emerald-400">${propiedad.precio.toLocaleString()}</div></div><p className="mt-6 text-slate-300">{propiedad.descripcion || 'Sin descripción.'}</p><div className="mt-6 grid grid-cols-3 gap-4 border-t border-slate-800 pt-4 text-center text-sm"><div><b className="block text-white">{propiedad.recamaras}</b><span className="text-slate-500">Recámaras</span></div><div><b className="block text-white">{propiedad.banos}</b><span className="text-slate-500">Baños</span></div><div><b className="block text-white">{propiedad.m2_construccion || '—'}</b><span className="text-slate-500">m² construcción</span></div></div></div></div><section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6"><h2 className="font-bold">Galería ({propiedad.multimedia.length})</h2><div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">{propiedad.multimedia.map((media) => <img key={media.id_media} src={media.url} alt={media.nombre || propiedad.titulo} className="h-28 w-full rounded-lg object-cover" />)}</div>{propiedad.multimedia.length === 0 && <p className="mt-3 text-sm text-slate-500">Sin multimedia.</p>}</section></main>;
+}

@@ -16,7 +16,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         <h1 className="text-xl font-bold text-white">{databaseError ? 'Base de datos no disponible' : 'No se pudo cargar la página'}</h1>
         <p className="mt-3 text-sm text-slate-400">
           {databaseError
-            ? 'Verifica que DATABASE_URL apunte a un PostgreSQL válido y reinicia la aplicación.'
+            ? 'El servicio no está disponible temporalmente. Intenta de nuevo en unos momentos o contacta al administrador.'
             : 'Ocurrió un error inesperado al cargar este módulo.'}
         </p>
         <button onClick={() => reset()} className="mt-6 rounded-lg bg-amber-500 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-amber-400">

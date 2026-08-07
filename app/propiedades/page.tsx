@@ -3,9 +3,10 @@ import Link from 'next/link';
 
 export const revalidate = 0;
 
-export default async function PropiedadesPage({ searchParams }: { searchParams: { busqueda?: string; tipo?: string } }) {
+export default async function PropiedadesPage({ searchParams }: { searchParams: { busqueda?: string; tipo?: string; page?: string } }) {
   const busqueda = searchParams.busqueda || '';
   const tipo = searchParams.tipo || '';
+  const page = Math.max(1, Number(searchParams.page || 1));
 
   const propiedades = await prisma.propiedad.findMany({
     where: {
@@ -23,6 +24,8 @@ export default async function PropiedadesPage({ searchParams }: { searchParams: 
     },
     include: { asesor: true, multimedia: true },
     orderBy: { updatedAt: 'desc' },
+    skip: (page - 1) * 24,
+    take: 24,
   });
 
   return (
@@ -40,6 +43,9 @@ export default async function PropiedadesPage({ searchParams }: { searchParams: 
             placeholder="Buscar por título, ciudad, colonia..."
             className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 w-full sm:w-80"
           />
+          <select name="tipo" defaultValue={tipo} className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500">
+            <option value="">Todos los tipos</option><option value="casa">Casa</option><option value="departamento">Departamento</option><option value="terreno">Terreno</option><option value="local">Local</option>
+          </select>
           <button
             type="submit"
             className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm rounded-lg border border-slate-700 transition-colors"
@@ -49,6 +55,8 @@ export default async function PropiedadesPage({ searchParams }: { searchParams: 
         </form>
       </div>
 
+      <div className="flex justify-between text-sm"><span className="text-slate-500">Página {page}</span><div className="flex gap-3">{page > 1 && <Link href={`/propiedades?busqueda=${encodeURIComponent(busqueda)}&tipo=${encodeURIComponent(tipo)}&page=${page - 1}`} className="text-amber-400">Anterior</Link>}<Link href={`/propiedades?busqueda=${encodeURIComponent(busqueda)}&tipo=${encodeURIComponent(tipo)}&page=${page + 1}`} className="text-amber-400">Siguiente</Link></div></div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {propiedades.length === 0 ? (
           <div className="col-span-full py-16 text-center text-slate-500 bg-slate-900/40 rounded-2xl border border-slate-800">
@@ -57,6 +65,7 @@ export default async function PropiedadesPage({ searchParams }: { searchParams: 
         ) : (
           propiedades.map((p) => (
             <div key={p.id_propiedad} className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-all flex flex-col justify-between group">
+              {p.multimedia[0] && <img src={p.multimedia[0].url} alt={p.titulo} className="h-44 w-full object-cover" />}
               <div className="p-6 space-y-4">
                 <div className="flex justify-between items-start gap-2">
                   <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 capitalize">
@@ -66,7 +75,7 @@ export default async function PropiedadesPage({ searchParams }: { searchParams: 
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-lg text-white group-hover:text-amber-400 transition-colors line-clamp-1">{p.titulo}</h3>
+                  <Link href={`/propiedades/${p.id_propiedad}`} className="font-bold text-lg text-white group-hover:text-amber-400 transition-colors line-clamp-1">{p.titulo}</Link>
                   <p className="text-xs text-slate-400 mt-1">{p.ciudad || 'Sin ubicación'}, {p.colonia || ''}</p>
                 </div>
 

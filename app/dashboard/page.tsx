@@ -36,13 +36,13 @@ export default async function DashboardPage() {
         </div>
         <div className="flex gap-3">
           <Link
-            href="/clientes"
+            href="/clientes/nuevo"
             className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm rounded-lg transition-colors shadow-lg shadow-amber-500/20"
           >
             + Nuevo Cliente
           </Link>
           <Link
-            href="/propiedades"
+            href="/propiedades/nuevo"
             className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm rounded-lg border border-slate-700 transition-colors"
           >
             + Nueva Propiedad
