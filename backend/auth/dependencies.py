@@ -1,4 +1,6 @@
+import os
 from fastapi import Depends, HTTPException, status
+from jose import jwt, JWTError
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session, joinedload
 from typing import Callable, Optional, Dict, Any
@@ -8,6 +10,12 @@ from backend.models.auth import Usuario, Rol, Permiso
 from backend.auth.constants import SystemRole
 
 security = HTTPBearer(auto_error=False)
+
+def decode_next_session(token: str):
+    try:
+        return jwt.decode(token, os.getenv("AUTH_SECRET", "iso-local-development-secret-change-me"), algorithms=["HS256"])
+    except JWTError:
+        return None
 
 
 from fastapi import Depends, HTTPException, status, Request
@@ -19,11 +27,15 @@ def get_current_user(
 ) -> Usuario:
     """Extrae y valida el JWT del header Authorization o Cookie HttpOnly. Retorna el modelo Usuario."""
     raw_token = None
+    using_next_session = False
     if credentials and credentials.credentials:
         raw_token = credentials.credentials
     else:
         raw_token = request.cookies.get("access_token")
 
+    if not raw_token:
+        raw_token = request.cookies.get("iso_session")
+        using_next_session = bool(raw_token)
     if not raw_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -31,7 +43,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    payload = decode_token(raw_token)
+    payload = decode_next_session(raw_token) if using_next_session else decode_token(raw_token)
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -132,4 +144,3 @@ def get_data_scope(current_user: Usuario, db: Session) -> Dict[str, Any]:
     # Asesor: solo ve sus propios registros asignados
     own_asesores_ids = [current_user.id_asesor] if current_user.id_asesor else []
     return {"scope": "own", "allowed_asesores_ids": own_asesores_ids, "id_tenant": current_user.id_tenant}
-

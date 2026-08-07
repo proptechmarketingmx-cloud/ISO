@@ -15,7 +15,7 @@ async function request(method, path, body = null) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const opts = { method, headers };
+  const opts = { method, headers, credentials: 'include' };
   if (body) opts.body = JSON.stringify(body);
 
   try {

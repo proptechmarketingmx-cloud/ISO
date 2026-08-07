@@ -67,10 +67,10 @@
         <!-- Tooltip -->
         <div class="d3-tooltip" id="d3-tooltip">
           <div class="d3-tooltip-name" id="tt-name"></div>
-          <div class="d3-tooltip-row"><span>Influence Score</span><span class="d3-tooltip-val" id="tt-influence">â€”</span></div>
-          <div class="d3-tooltip-row"><span>Provider Score</span><span class="d3-tooltip-val" id="tt-provider">â€”</span></div>
-          <div class="d3-tooltip-row"><span>Referencias</span><span class="d3-tooltip-val" id="tt-refs">â€”</span></div>
-          <div class="d3-tooltip-row"><span>Conexiones</span><span class="d3-tooltip-val" id="tt-conn">â€”</span></div>
+          <div class="d3-tooltip-row"><span>Influence Score</span><span class="d3-tooltip-val" id="tt-influence">—</span></div>
+          <div class="d3-tooltip-row"><span>Provider Score</span><span class="d3-tooltip-val" id="tt-provider">—</span></div>
+          <div class="d3-tooltip-row"><span>Referencias</span><span class="d3-tooltip-val" id="tt-refs">—</span></div>
+          <div class="d3-tooltip-row"><span>Conexiones</span><span class="d3-tooltip-val" id="tt-conn">—</span></div>
         </div>
 
         <!-- Controls -->
@@ -100,15 +100,15 @@
 
       <!-- Info panel below -->
       <div class="stats-row" style="margin-top:16px" id="network-stats">
-        <div class="stat-item"><span class="stat-val" id="stat-nodos">â€”</span><span class="stat-lbl">Nodos</span></div>
+        <div class="stat-item"><span class="stat-val" id="stat-nodos">—</span><span class="stat-lbl">Nodos</span></div>
         <div class="stat-divider"></div>
-        <div class="stat-item"><span class="stat-val" id="stat-edges">â€”</span><span class="stat-lbl">Conexiones</span></div>
+        <div class="stat-item"><span class="stat-val" id="stat-edges">—</span><span class="stat-lbl">Conexiones</span></div>
         <div class="stat-divider"></div>
-        <div class="stat-item"><span class="stat-val" id="stat-familiar">â€”</span><span class="stat-lbl">Familiares</span></div>
+        <div class="stat-item"><span class="stat-val" id="stat-familiar">—</span><span class="stat-lbl">Familiares</span></div>
         <div class="stat-divider"></div>
-        <div class="stat-item"><span class="stat-val" id="stat-referencia">â€”</span><span class="stat-lbl">Referencias</span></div>
+        <div class="stat-item"><span class="stat-val" id="stat-referencia">—</span><span class="stat-lbl">Referencias</span></div>
         <div class="stat-divider"></div>
-        <div class="stat-item"><span class="stat-val" id="stat-profesional">â€”</span><span class="stat-lbl">Profesionales</span></div>
+        <div class="stat-item"><span class="stat-val" id="stat-profesional">—</span><span class="stat-lbl">Profesionales</span></div>
         <div class="stat-divider"></div>
         <div class="stat-item"><span class="stat-val" id="stat-geo">—</span><span class="stat-lbl">Geográficas</span></div>
       </div>
@@ -271,10 +271,10 @@ function dragEnd(e, d) {
 function showTooltip(e, d) {
   tooltip.classList.add('visible');
   document.getElementById('tt-name').textContent      = `${d.nombre} ${d.apellido_paterno||''}`;
-  document.getElementById('tt-influence').textContent = d.influence_score !== undefined ? d.influence_score.toFixed(1) : 'â€”';
-  document.getElementById('tt-provider').textContent  = d.provider_score  !== undefined ? d.provider_score.toFixed(1)  : 'â€”';
-  document.getElementById('tt-refs').textContent      = d.referencias_totales ?? 'â€”';
-  document.getElementById('tt-conn').textContent      = d.conexiones ?? 'â€”';
+  document.getElementById('tt-influence').textContent = d.influence_score !== undefined ? d.influence_score.toFixed(1) : '—';
+  document.getElementById('tt-provider').textContent  = d.provider_score  !== undefined ? d.provider_score.toFixed(1)  : '—';
+  document.getElementById('tt-refs').textContent      = d.referencias_totales ?? '—';
+  document.getElementById('tt-conn').textContent      = d.conexiones ?? '—';
   moveTooltip(e);
 }
 function moveTooltip(e) {

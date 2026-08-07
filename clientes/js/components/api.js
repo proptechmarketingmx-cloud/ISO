@@ -21,11 +21,17 @@ export async function apiFetch(endpoint, options = {}) {
 
     const config = {
         ...options,
+        credentials: 'include',
         headers: {
             ...defaultHeaders,
             ...options.headers,
         },
     };
+
+    const token = auth.getToken();
+    if (token && !config.headers.Authorization) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
 
     let response;
     try {
@@ -64,3 +70,4 @@ export async function apiFetch(endpoint, options = {}) {
 
     return data;
 }
+import { auth } from '/assets/js/auth.js';

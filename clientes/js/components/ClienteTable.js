@@ -18,10 +18,14 @@ export class ClienteTable {
             if (estado) url += `&estado=${encodeURIComponent(estado)}`;
             
             const response = await apiFetch(url);
-            this.clientes = response || [];
+            // FastAPI devuelve una lista; algunos proxies/dev servers pueden
+            // envolverla como {items: []} o {data: []}.
+            this.clientes = Array.isArray(response) ? response : (response?.items || response?.data || []);
             this.updateTableBody();
         } catch (error) {
-            toast('Error al cargar clientes', 'error');
+            const tbody = this.container.querySelector('#cliente-tbody');
+            if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--c-err)">${this.escapeHTML(error.message || 'No se pudieron cargar los clientes')}</td></tr>`;
+            toast(`Error al cargar clientes: ${error.message || 'respuesta no válida'}`, 'error');
             console.error(error);
         }
     }
@@ -162,5 +166,9 @@ export class ClienteTable {
     async reloadWithCurrentFilters() {
         const { search, estado } = this.getCurrentFilters();
         await this.loadData(search, estado);
+    }
+
+    escapeHTML(value) {
+        return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
     }
 }
