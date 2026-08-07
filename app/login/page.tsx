@@ -16,7 +16,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Simulación de autenticación (listo para conectar con Supabase Auth)
+      // Punto de integración para el proveedor de autenticación elegido.
       if (email && password) {
         router.push('/dashboard');
       } else {

@@ -2,7 +2,7 @@ services:
 
   # ─────────────────────────────────────────────────────────────────
   # P2P SYNC — PostgreSQL (usado por Next.js localmente)
-  # En producción Vercel usa Supabase; este servicio es solo local.
+  # Servicio PostgreSQL local para desarrollo.
   # ─────────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine

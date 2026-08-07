@@ -49,7 +49,7 @@ export default function Navbar() {
 
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              ● Supabase Cloud
+              ● PostgreSQL
             </span>
           </div>
         </div>

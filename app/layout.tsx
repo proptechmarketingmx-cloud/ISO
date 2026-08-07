@@ -4,7 +4,7 @@ import Navbar from './components/Navbar';
 
 export const metadata: Metadata = {
   title: 'ISO — Plataforma Inmobiliaria',
-  description: 'Sistema CRM Inmobiliario, Matching y Redes CNA en Supabase Cloud',
+  description: 'Sistema CRM Inmobiliario, Matching y Redes CNA sobre PostgreSQL',
 };
 
 export default function RootLayout({

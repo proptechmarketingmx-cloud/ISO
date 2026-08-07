@@ -52,7 +52,7 @@ export default async function DashboardPage() {
         <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-slate-700 transition-colors">
           <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Clientes</div>
           <div className="text-4xl font-black text-white mt-2">{totalClientes}</div>
-          <div className="text-xs text-emerald-400 mt-2 font-medium">Registrados en Supabase</div>
+          <div className="text-xs text-emerald-400 mt-2 font-medium">Registrados en PostgreSQL</div>
         </div>
 
         <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-slate-700 transition-colors">
