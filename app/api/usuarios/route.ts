@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/requireAdmin';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  return NextResponse.json(await prisma.usuario.findMany({ select: { id_usuario: true, email: true, nombre: true, activo: true, id_tenant: true, id_asesor: true, created_at: true }, orderBy: { created_at: 'desc' } }));
+export async function GET(request: NextRequest) {
+  if (!await requireAdmin(request)) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  return NextResponse.json(await prisma.usuario.findMany({ include: { roles: { include: { rol: true } }, asesor: true, tenant: true }, orderBy: { created_at: 'desc' } }));
 }
 
 export async function PATCH(req: NextRequest) {
