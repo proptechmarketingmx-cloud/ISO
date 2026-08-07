@@ -8,6 +8,6 @@ backend/.venv/
 backend/venv/
 .DS_Store
 *.log
-
+.next/
 .vercel
 .env*
