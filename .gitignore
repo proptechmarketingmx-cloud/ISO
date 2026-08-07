@@ -9,5 +9,4 @@ backend/venv/
 .DS_Store
 *.log
 .next/
-.vercel
 .env*

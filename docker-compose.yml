@@ -63,7 +63,7 @@ services:
       DB_NAME:       ${MYSQL_DATABASE:-iso_db}
       DB_USER:       ${MYSQL_USER:-iso_user}
       DB_PASSWORD:   ${MYSQL_PASSWORD:-isosecret}
-      CORS_ALLOWED_ORIGINS: "http://localhost:80,http://localhost:5173,http://127.0.0.1,https://iso-silk.vercel.app"
+      CORS_ALLOWED_ORIGINS: "http://localhost:80,http://localhost:5173,http://127.0.0.1"
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:

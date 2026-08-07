@@ -4,24 +4,27 @@ import Link from 'next/link';
 export const revalidate = 0;
 
 export default async function DashboardPage() {
-  const [totalClientes, totalLeads, totalPropiedades, totalAsesores, clientesRecientes, propiedadesRecientes] = await Promise.all([
-    prisma.cliente.count({ where: { deletedAt: null } }),
-    prisma.cliente.count({ where: { deletedAt: null, estado_cliente: 'nuevo' } }),
-    prisma.propiedad.count({ where: { deletedAt: null, status: 'disponible' } }),
-    prisma.asesor.count({ where: { status: 'activo' } }),
-    prisma.cliente.findMany({
-      where: { deletedAt: null },
-      orderBy: { updatedAt: 'desc' },
-      take: 5,
-      include: { asesor: true },
-    }),
-    prisma.propiedad.findMany({
-      where: { deletedAt: null },
-      orderBy: { updatedAt: 'desc' },
-      take: 5,
-      include: { asesor: true },
-    }),
-  ]);
+  let totalClientes = 0;
+  let totalLeads = 0;
+  let totalPropiedades = 0;
+  let totalAsesores = 0;
+  let clientesRecientes: any[] = [];
+  let propiedadesRecientes: any[] = [];
+  let dbError: string | null = null;
+
+  try {
+    [totalClientes, totalLeads, totalPropiedades, totalAsesores, clientesRecientes, propiedadesRecientes] = await Promise.all([
+      prisma.cliente.count({ where: { deletedAt: null } }),
+      prisma.cliente.count({ where: { deletedAt: null, estado_cliente: 'nuevo' } }),
+      prisma.propiedad.count({ where: { deletedAt: null, status: 'disponible' } }),
+      prisma.asesor.count({ where: { status: 'activo' } }),
+      prisma.cliente.findMany({ where: { deletedAt: null }, orderBy: { updatedAt: 'desc' }, take: 5, include: { asesor: true } }),
+      prisma.propiedad.findMany({ where: { deletedAt: null }, orderBy: { updatedAt: 'desc' }, take: 5, include: { asesor: true } }),
+    ]);
+  } catch (error) {
+    console.error('[Dashboard] No se pudo conectar a PostgreSQL:', error);
+    dbError = 'Base de datos PostgreSQL no disponible. Verifica DATABASE_URL.';
+  }
 
   return (
     <main className="max-w-7xl mx-auto p-6 md:p-8 space-y-8">
@@ -46,6 +49,8 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {dbError && <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">⚠️ {dbError}</div>}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

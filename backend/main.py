@@ -44,8 +44,7 @@ app = FastAPI(
 
 # Configurar middleware de CORS
 DEFAULT_CORS_ORIGINS = (
-    "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173,"
-    "https://iso-silk.vercel.app"
+    "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173"
 )
 allowed_origins = [
     origin.strip()
