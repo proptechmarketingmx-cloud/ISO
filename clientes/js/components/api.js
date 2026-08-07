@@ -11,9 +11,10 @@ export async function apiFetch(endpoint, options = {}) {
     // Si la aplicación legacy se abre desde Next.js (puerto 3000), sus
     // rutas relativas /api no llegan a FastAPI. En Vite/Nginx se conserva el
     // proxy relativo configurado para desarrollo y producción.
-    const apiEndpoint = window.location.port === '3000'
-        ? `http://localhost:8000${endpoint}`
-        : endpoint;
+    const frontendPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+    const apiEndpoint = ['80', '443', '5173'].includes(frontendPort) && window.location.protocol !== 'file:'
+        ? endpoint
+        : `http://localhost:8000${endpoint}`;
     const defaultHeaders = {
         'Content-Type': 'application/json',
     };

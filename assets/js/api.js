@@ -3,7 +3,10 @@ import { auth } from '/assets/js/auth.js';
 // Vite (5173) y Nginx (80) hacen proxy de /api hacia FastAPI. Cuando el
 // CRM legacy se abre desde Next (3000), /api pertenece a las rutas de Next,
 // por lo que debemos dirigir las llamadas directamente al backend Python.
-const API_BASE = window.location.port === '3000' ? 'http://localhost:8000/api' : '/api';
+const frontendPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+const API_BASE = ['80', '443', '5173'].includes(frontendPort) && window.location.protocol !== 'file:'
+  ? '/api'
+  : 'http://localhost:8000/api';
 
 async function request(method, path, body = null) {
   const headers = { 'Content-Type': 'application/json' };
