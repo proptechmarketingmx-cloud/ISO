@@ -4,9 +4,19 @@ import Link from 'next/link';
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const usuarios = await prisma.usuario.findMany({ where: { deletedAt: null }, orderBy: { updatedAt: 'desc' } });
-  const clientes = await prisma.cliente.findMany({ where: { deletedAt: null }, orderBy: { updatedAt: 'desc' } });
-  const propiedades = await prisma.propiedad.findMany({ where: { deletedAt: null }, orderBy: { updatedAt: 'desc' } });
+  let usuarios: any[] = [];
+  let clientes: any[] = [];
+  let propiedades: any[] = [];
+  let dbError: string | null = null;
+
+  try {
+    usuarios = await prisma.usuario.findMany({ where: { deletedAt: null }, orderBy: { updatedAt: 'desc' } });
+    clientes = await prisma.cliente.findMany({ where: { deletedAt: null }, orderBy: { updatedAt: 'desc' } });
+    propiedades = await prisma.propiedad.findMany({ where: { deletedAt: null }, orderBy: { updatedAt: 'desc' } });
+  } catch (error: any) {
+    console.error('[Database Error]', error?.message);
+    dbError = error?.message || 'No se pudo establecer conexión con la base de datos PostgreSQL.';
+  }
 
   return (
     <main className="max-w-6xl mx-auto p-8 space-y-8">
@@ -21,6 +31,18 @@ export default async function HomePage() {
           </span>
         </div>
       </header>
+
+      {dbError && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-5 text-amber-200 text-sm space-y-2">
+          <div className="font-bold flex items-center gap-2 text-amber-400">
+            ⚠️ Base de Datos PostgreSQL no disponible en este entorno
+          </div>
+          <p className="text-slate-300">
+            En un entorno serverless (Vercel), la base de datos local <code className="bg-slate-800 px-1.5 py-0.5 rounded text-amber-300">localhost:5432</code> no está accesible.
+            Para usar la aplicación P2P en tu equipo con la base de datos Docker local, ejecuta <code className="bg-slate-800 px-1.5 py-0.5 rounded text-emerald-400">setup.bat</code> o <code className="bg-slate-800 px-1.5 py-0.5 rounded text-emerald-400">./setup.sh</code>.
+          </p>
+        </div>
+      )}
 
       {/* Grid de Estado */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
