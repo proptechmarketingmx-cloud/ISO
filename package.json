@@ -1,5 +1,5 @@
 {
-  "name": "iso-plataforma-p2p",
+  "name": "iso-plataforma-crm",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -9,9 +9,6 @@
     "lint": "next lint",
     "dev:next": "next dev",
     "build:next": "next build",
-    "dev:crm": "vite",
-    "build:crm": "vite build",
-    "preview:crm": "vite preview",
     "schema:check": "prisma validate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
@@ -33,7 +30,6 @@
     "postcss": "^8.4.38",
     "prisma": "^6.19.3",
     "tailwindcss": "^3.4.3",
-    "typescript": "^5.4.5",
-    "vite": "^5.4.21"
+    "typescript": "^5.4.5"
   }
 }

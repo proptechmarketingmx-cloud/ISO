@@ -1,6 +1,3 @@
-export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    const { startSyncEngine } = await import('@/lib/sync/syncEngine');
-    startSyncEngine();
-  }
-}
+// La aplicación final corre como un único nodo en Vercel. El motor P2P/Tailscale
+// se retiró para evitar procesos persistentes y dependencias de peers.json.
+export async function register() {}

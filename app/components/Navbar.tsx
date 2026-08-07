@@ -41,6 +41,9 @@ export default function Navbar() {
               >
                 Matching
               </Link>
+              <Link href="/asesores" className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors">Asesores</Link>
+              <Link href="/cna" className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors">CNA</Link>
+              <Link href="/kpis" className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors">KPIs</Link>
             </nav>
           </div>
 
