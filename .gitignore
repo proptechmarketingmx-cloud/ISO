@@ -8,3 +8,6 @@ backend/.venv/
 backend/venv/
 .DS_Store
 *.log
+
+.vercel
+.env*
