@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CNA Asesores â€” Rankings â€” ISO</title>
+  <title>CNA Asesores — Rankings — ISO</title>
   <link rel="stylesheet" href="/assets/css/estilo.css"/>
 </head>
 <body>
@@ -11,15 +11,15 @@
   <div class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <span class="topbar-title">CNA â€” Rankings</span>
-        <span class="topbar-subtitle">Top clientes por mÃ©tricas de red</span>
+        <span class="topbar-title">CNA — Rankings</span>
+        <span class="topbar-subtitle">Principales asesores por métricas de red</span>
       </div>
     </header>
     <main class="page-inner fade-in">
       <div class="page-header">
         <div class="page-header-left">
           <h1 class="page-header-title">Rankings</h1>
-          <p class="page-header-sub">ClasificaciÃ³n de clientes por influencia, volumen y score</p>
+          <p class="page-header-sub">Clasificación de asesores por influencia, volumen y puntuación</p>
         </div>
         <div class="page-header-right">
           <div class="tabs" style="background:var(--c-surface-2)">
@@ -90,14 +90,14 @@ async function load() {
 
     grid.innerHTML =
       buildRanking('Top Referidores', iconRefs, data.referencias_totales, 'referencias_totales',
-        v => formatNumber(v), c => `ConversiÃ³n: ${(c.conversion||0).toFixed(1)}%`) +
+        v => formatNumber(v), c => `Conversión: ${(c.conversion||0).toFixed(1)}%`) +
       buildRanking('Top Volumen Generado', iconVol, data.volumen_generado, 'volumen_generado',
-        v => formatCurrency(v, 0), c => `ComisiÃ³n: ${formatCurrency(c.comision_generada, 0)}`) +
+        v => formatCurrency(v, 0), c => `Comisión: ${formatCurrency(c.comision_generada, 0)}`) +
       buildRanking('Top Provider Score', iconScore, data.provider_score, 'provider_score',
-        v => v !== undefined ? v.toFixed(1) : 'â€”', c => getProviderLevel(c.provider_score).label);
+        v => v !== undefined ? v.toFixed(1) : '—', c => getProviderLevel(c.provider_score).label);
 
   } catch {
-    grid.innerHTML = `<div style="grid-column:1/-1;color:var(--c-text-2);padding:20px">Sin conexiÃ³n al servidor.</div>`;
+      grid.innerHTML = `<div style="grid-column:1/-1;color:var(--c-text-2);padding:20px">Sin conexión con el servidor.</div>`;
   }
 }
 

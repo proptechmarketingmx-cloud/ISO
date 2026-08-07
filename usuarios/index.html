@@ -224,6 +224,11 @@
         <span class="topbar-title">Administración</span>
         <span class="topbar-subtitle">Usuarios y Permisos</span>
       </div>
+      <div class="topbar-right">
+        <button type="button" class="topbar-btn" id="btn-back" title="Volver" aria-label="Volver a la página anterior">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/><line x1="9" y1="12" x2="21" y2="12"/></svg>
+        </button>
+      </div>
     </header>
 
     <main class="page-content" style="padding: 24px;" aria-labelledby="page-title">
@@ -316,6 +321,7 @@
 </div>
 
 <script type="module">
+import '/assets/js/nav.js';
 import '/assets/js/auth-guard.js';
 import { auth, SYSTEM_ROLES } from '/assets/js/auth.js';
 import { api } from '/assets/js/api.js';
@@ -324,6 +330,10 @@ const modal = document.getElementById('user-modal');
 const form = document.getElementById('user-form');
 const tableBody = document.getElementById('users-table-body');
 const errorAlert = document.getElementById('error-alert');
+document.getElementById('btn-back').addEventListener('click', () => {
+  if (window.history.length > 1) window.history.back();
+  else window.location.href = '/dashboard/';
+});
 
 let cachedRoles = [];
 let cachedUsers = [];

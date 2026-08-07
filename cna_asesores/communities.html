@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CNA Asesores â€” Comunidades â€” ISO</title>
+  <title>CNA Asesores — Comunidades — ISO</title>
   <link rel="stylesheet" href="/assets/css/estilo.css"/>
 </head>
 <body>
@@ -11,7 +11,7 @@
   <div class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <span class="topbar-title">CNA â€” Comunidades</span>
+        <span class="topbar-title">CNA — Comunidades</span>
         <span class="topbar-subtitle">Clusters de clientes relacionados</span>
       </div>
       <div class="topbar-right">
@@ -19,7 +19,7 @@
           <option value="">Todos los tipos</option>
           <option value="FAMILIAR">Familiar</option>
           <option value="PROFESIONAL">Profesional</option>
-          <option value="GEOGRAFICA">GeogrÃ¡fica</option>
+          <option value="GEOGRAFICA">Geográfica</option>
           <option value="EMPRESARIAL">Empresarial</option>
         </select>
       </div>
@@ -71,7 +71,7 @@ async function load() {
     allCommunities = data.communities || [];
     render();
   } catch {
-    document.getElementById('community-grid').innerHTML = `<div style="color:var(--c-text-2);padding:20px">Sin conexiÃ³n al servidor.</div>`;
+    document.getElementById('community-grid').innerHTML = `<div style="color:var(--c-text-2);padding:20px">Sin conexión con el servidor.</div>`;
   }
 }
 
@@ -99,7 +99,7 @@ function render() {
         ${c.descripcion ? `<p style="font-size:var(--ts-xs);color:var(--c-text-2);margin-bottom:8px">${c.descripcion}</p>` : ''}
         <div class="community-members">
           ${members.map(m => `<div class="community-member">${m.nombre} ${m.apellido_paterno||''}</div>`).join('')}
-          ${(c.total_miembros||0) > 5 ? `<div style="color:var(--c-text-3);font-size:var(--ts-xs);margin-left:11px">+${(c.total_miembros||0)-5} mÃ¡s...</div>` : ''}
+          ${(c.total_miembros||0) > 5 ? `<div style="color:var(--c-text-3);font-size:var(--ts-xs);margin-left:11px">+${(c.total_miembros||0)-5} más...</div>` : ''}
         </div>
       </div>
     `;

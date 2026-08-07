@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CNA Asesores â€” Influence Score â€” ISO</title>
+  <title>CNA Asesores — Influence Score — ISO</title>
   <link rel="stylesheet" href="/assets/css/estilo.css"/>
 </head>
 <body>
@@ -11,15 +11,15 @@
   <div class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <span class="topbar-title">CNA â€” Influence Score</span>
-        <span class="topbar-subtitle">MediciÃ³n de influencia dentro de la red</span>
+        <span class="topbar-title">CNA — Influence Score</span>
+        <span class="topbar-subtitle">Medición de influencia dentro de la red</span>
       </div>
     </header>
     <main class="page-inner fade-in">
       <div class="page-header">
         <div class="page-header-left">
           <h1 class="page-header-title">Influence Score</h1>
-          <p class="page-header-sub">FÃ³rmula: (Ref. DirectasÃ—30%) + (Ref. IndirectasÃ—20%) + (ConexionesÃ—20%) + (ConversiÃ³nÃ—30%)</p>
+          <p class="page-header-sub">Indicadores de influencia y alcance de la red de asesores.</p>
         </div>
         <div class="page-header-right">
           <div class="tabs" style="background:var(--c-surface-2)">
@@ -41,7 +41,7 @@
           </div>
           <select class="select" id="filter-nivel" style="width:150px">
             <option value="">Todos los niveles</option>
-            <option value="LÃ­der">LÃ­der (81-100)</option>
+            <option value="Líder">Líder (81-100)</option>
             <option value="Muy Alta">Muy Alta (61-80)</option>
             <option value="Alta">Alta (41-60)</option>
             <option value="Media">Media (21-40)</option>
@@ -63,7 +63,7 @@
                 <th>Ref. Directas</th>
                 <th>Ref. Indirectas</th>
                 <th>Conexiones</th>
-                <th>ConversiÃ³n</th>
+                <th>Conversión</th>
                 <th>Influence Score</th>
                 <th>Nivel</th>
               </tr>
@@ -94,7 +94,7 @@ async function load() {
     allData = (data || []).sort((a,b) => (b.influence_score||0) - (a.influence_score||0));
     applyFilters();
   } catch {
-    document.getElementById('tabla-influence').innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--c-text-2)">Sin conexiÃ³n al servidor.</td></tr>`;
+    document.getElementById('tabla-influence').innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--c-text-2)">Sin conexión con el servidor.</td></tr>`;
   }
 }
 
@@ -143,7 +143,7 @@ function renderPage() {
     }).join('');
   }
 
-  document.getElementById('page-info').textContent = `PÃ¡gina ${page} de ${pages}`;
+  document.getElementById('page-info').textContent = `Página ${page} de ${pages}`;
   const pag = document.getElementById('pagination');
   pag.innerHTML = `
     <button class="page-btn" onclick="changePage(${page-1})" ${page<=1?'disabled':''}>
