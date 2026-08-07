@@ -12,6 +12,10 @@ import { auth } from '/assets/js/auth.js';
 
 (async function guard() {
   const token = auth.getToken();
+  const frontendPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+  const apiBase = ['80', '443', '5173'].includes(frontendPort) && window.location.protocol !== 'file:'
+    ? '/api'
+    : 'http://localhost:8000/api';
 
   if (!token) {
     // No hay token en absoluto → redirigir
@@ -21,7 +25,7 @@ import { auth } from '/assets/js/auth.js';
 
   // Validar que el token siga siendo válido en el servidor
   try {
-    const res = await fetch('/api/auth/me', {
+    const res = await fetch(`${apiBase}/auth/me`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 

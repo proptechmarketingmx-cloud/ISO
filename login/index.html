@@ -141,6 +141,12 @@ import { auth } from '/assets/js/auth.js';
 const form = document.getElementById('login-form');
 const errorBox = document.getElementById('error-box');
 const btnSubmit = document.getElementById('btn-submit');
+// Vite (5173) y Nginx (80/443) tienen proxy /api; otros servidores deben
+// llamar directamente al backend FastAPI.
+const frontendPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+const API_BASE = ['80', '443', '5173'].includes(frontendPort) && window.location.protocol !== 'file:'
+  ? '/api'
+  : 'http://localhost:8000/api';
 
 // Si ya está autenticado, redirigir a dashboard
 if (auth.isAuthenticated()) {
@@ -157,7 +163,7 @@ form.addEventListener('submit', async (e) => {
   const password = document.getElementById('password').value;
 
   try {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -182,7 +188,7 @@ form.addEventListener('submit', async (e) => {
     auth.setToken(data.access_token);
 
     // Obtener perfil completo con permisos
-    const meRes = await fetch('/api/auth/me', {
+    const meRes = await fetch(`${API_BASE}/auth/me`, {
       headers: { 'Authorization': `Bearer ${data.access_token}` }
     });
     const meContentType = meRes.headers.get('content-type') || '';
