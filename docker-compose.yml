@@ -5,16 +5,16 @@ services:
   # Servicio PostgreSQL local para desarrollo.
   # ─────────────────────────────────────────────────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: postgres:15-alpine
     container_name: iso_postgres_db
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
-      POSTGRES_DB: iso_p2p
+      POSTGRES_DB: iso_dev
     ports:
       # Exclusivamente para la máquina local (127.0.0.1)
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
