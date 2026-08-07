@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import Navbar from './components/Navbar';
 
 export const metadata: Metadata = {
-  title: 'ISO Plataforma P2P',
-  description: 'Plataforma Inmobiliaria con Sincronización P2P por Tailscale',
+  title: 'ISO — Plataforma Inmobiliaria',
+  description: 'Sistema CRM Inmobiliario, Matching y Redes CNA en Supabase Cloud',
 };
 
 export default function RootLayout({
@@ -13,7 +14,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className="bg-slate-900 text-slate-100 min-h-screen">
+      <body className="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+        <Navbar />
         {children}
       </body>
     </html>

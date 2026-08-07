@@ -8,53 +8,546 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ============================================================================
+// 1. TENANT & RBAC
+// ============================================================================
+
+model Tenant {
+  id_tenant  Int      @id @default(autoincrement())
+  nombre     String
+  slug       String   @unique
+  plan       String   @default("pro")
+  activo     Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  usuarios   Usuario[]
+  roles      Rol[]
+  asesores   Asesor[]
+  propiedades Propiedad[]
+  clientes   Cliente[]
+
+  @@map("tenants")
+}
+
 model Usuario {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  nombre    String
-  role      String    @default("asesor")
-  activo    Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  id_usuario    Int       @id @default(autoincrement())
+  id_tenant     Int?
+  id_asesor     Int?
+  id_manager    Int?
+  email         String    @unique
+  password_hash String
+  nombre        String?
+  activo        Boolean   @default(true)
+  ultimo_acceso DateTime?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @default(now()) @updatedAt
+  deletedAt     DateTime?
 
-  clientes  Cliente[]
+  tenant        Tenant?   @relation(fields: [id_tenant], references: [id_tenant], onDelete: Cascade)
+  asesor        Asesor?   @relation(fields: [id_asesor], references: [id_asesor], onDelete: SetNull)
+  manager       Usuario?  @relation("UsuarioSubordinados", fields: [id_manager], references: [id_usuario], onDelete: SetNull)
+  subordinados  Usuario[] @relation("UsuarioSubordinados")
+
+  roles         UsuarioRol[]
+
+  @@map("usuarios")
 }
 
-model Cliente {
-  id          String    @id @default(uuid())
+model Rol {
+  id_rol      Int      @id @default(autoincrement())
+  id_tenant   Int?
   nombre      String
-  email       String?
-  telefono    String?
-  estado      String    @default("nuevo")
-  presupuesto Float?
-  usuarioId   String?
-  usuario     Usuario?  @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  slug        String
+  descripcion String?
+  es_sistema  Boolean  @default(false)
+  created_at  DateTime @default(now())
 
-  notas       Nota[]
+  tenant      Tenant?  @relation(fields: [id_tenant], references: [id_tenant], onDelete: Cascade)
+  permisos    Permiso[]
+  usuarios    UsuarioRol[]
+
+  @@unique([id_tenant, slug], name: "unique_tenant_slug")
+  @@map("roles")
 }
+
+model UsuarioRol {
+  id_usuario  Int
+  id_rol      Int
+  assigned_at DateTime @default(now())
+  assigned_by Int?
+
+  usuario     Usuario  @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
+  rol         Rol      @relation(fields: [id_rol], references: [id_rol], onDelete: Cascade)
+
+  @@id([id_usuario, id_rol])
+  @@map("usuario_roles")
+}
+
+model Permiso {
+  id_permiso     Int      @id @default(autoincrement())
+  id_rol         Int
+  modulo         String
+  puede_crear    Boolean  @default(false)
+  puede_leer     Boolean  @default(false)
+  puede_editar   Boolean  @default(false)
+  puede_eliminar Boolean  @default(false)
+  restricciones  Json?
+  updated_at     DateTime @default(now()) @updatedAt
+  updated_by     Int?
+
+  rol            Rol      @relation(fields: [id_rol], references: [id_rol], onDelete: Cascade)
+
+  @@unique([id_rol, modulo], name: "unique_rol_modulo")
+  @@map("permisos")
+}
+
+model AuditoriaRoles {
+  id_audit         Int      @id @default(autoincrement())
+  id_usuario       Int?
+  id_tenant        Int?
+  entidad          String
+  id_entidad       Int
+  accion           String
+  snapshot_antes   Json?
+  snapshot_despues Json?
+  created_at       DateTime @default(now())
+
+  @@map("auditoria_roles")
+}
+
+// ============================================================================
+// 2. ASESORES
+// ============================================================================
+
+model Asesor {
+  id_asesor     Int      @id @default(autoincrement())
+  id_tenant     Int?
+  nombre        String
+  apellidos     String
+  telefono      String?
+  correo        String?
+  status        String   @default("activo")
+  fecha_ingreso DateTime @default(now())
+
+  tenant        Tenant?  @relation(fields: [id_tenant], references: [id_tenant], onDelete: Cascade)
+  usuarios      Usuario[]
+  propiedades   Propiedad[]
+  clientes      Cliente[]
+  actividadesPropiedad PropiedadActividad[]
+  actividadesCliente   ClienteActividad[]
+  relacionesOrigen     RelacionAsesor[] @relation("AsesorOrigen")
+  relacionesDestino    RelacionAsesor[] @relation("AsesorDestino")
+
+  @@map("asesores")
+}
+
+// ============================================================================
+// 3. PROPIEDADES Y TABLAS SATÉLITE
+// ============================================================================
 
 model Propiedad {
-  id          String    @id @default(uuid())
-  titulo      String
-  descripcion String?
-  precio      Float
-  ubicacion   String?
-  tipo        String    @default("casa")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id_propiedad        Int       @id @default(autoincrement())
+  id_tenant           Int?
+
+  // General
+  titulo              String
+  descripcion         String?
+  tipo                String
+  tipo_operacion      String    // venta, renta, preventa
+  status              String    @default("disponible")
+  id_asesor           Int?
+
+  // Propietario
+  propietario_nombre   String?
+  propietario_whatsapp String?
+
+  // Ubicación jerárquica
+  pais                String?   @default("MX")
+  estado              String?
+  municipio           String?
+  ciudad              String?
+  colonia             String?
+  fraccionamiento     String?
+  codigo_postal       String?
+
+  // Comercial
+  precio              Float
+  precio_negociable   Boolean   @default(false)
+  creditos_aceptados  String?   // JSON array string
+  comision            Float?
+  comision_compartida Float?
+  exclusiva           Boolean   @default(false)
+  fecha_captacion     DateTime?
+  fecha_publicacion   DateTime?
+
+  // Física
+  m2_construccion     Float?
+  m2_terreno          Float?
+  frente              Float?
+  fondo               Float?
+  recamaras           Int       @default(0)
+  recamaras_pb        Int       @default(0)
+  banos               Float     @default(0.0)
+  niveles             Int       @default(1)
+  estacionamientos    Int       @default(0)
+  antiguedad          Int?
+  orientacion         String?
+  estado_conservacion String?
+  remodelada          Boolean   @default(false)
+  anio_construccion   Int?
+
+  // Legal
+  escrituras             Boolean @default(false)
+  regimen                String?
+  libre_gravamen         Boolean @default(false)
+  predial                Boolean @default(false)
+  adeudos                Boolean @default(false)
+  hipoteca_vigente       Boolean @default(false)
+  documentacion_completa Boolean @default(false)
+
+  // Perfil ideal (para matching)
+  ingreso_recomendado Float?
+  tipo_credito_ideal  String?
+  estado_civil_ideal  String?
+  genero_ideal        String?
+  hijos_ideal         Int?
+  mascotas_ideal      Int?
+  integrantes_ideal   Int?
+  ideal_para          String?   // JSON array string
+  amenidades          String?   // JSON array string
+  servicios           String?   // JSON array string
+  uso_suelo           String?
+
+  // Scores
+  score_atractivo      Float?
+  score_compatibilidad Float?
+
+  // Sistema
+  fecha_registro      DateTime  @default(now())
+  updatedAt           DateTime  @default(now()) @updatedAt
+  deletedAt           DateTime?
+
+  // Relaciones
+  tenant           Tenant?   @relation(fields: [id_tenant], references: [id_tenant], onDelete: Cascade)
+  asesor           Asesor?   @relation(fields: [id_asesor], references: [id_asesor], onDelete: SetNull)
+  multimedia       PropiedadMultimedia[]
+  compatabilidades CompatibilidadClientePropiedad[]
+  actividades      PropiedadActividad[]
+  documentos       PropiedadDocumento[]
+  notas            PropiedadNota[]
+  historial        PropiedadHistorial[]
+
+  @@map("propiedades")
 }
 
-model Nota {
-  id        String    @id @default(uuid())
-  contenido String
-  clienteId String
-  cliente   Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+model PropiedadMultimedia {
+  id_media     Int      @id @default(autoincrement())
+  id_propiedad Int
+  tipo         String   // foto, video, virtual, plano, documento
+  url          String
+  nombre       String?
+  descripcion  String?
+  es_principal Boolean  @default(false)
+  orden        Int      @default(0)
+  fecha_subida DateTime @default(now())
+
+  propiedad    Propiedad @relation(fields: [id_propiedad], references: [id_propiedad], onDelete: Cascade)
+
+  @@map("propiedades_multimedia")
+}
+
+model PropiedadActividad {
+  id_actividad Int      @id @default(autoincrement())
+  id_propiedad Int
+  tipo         String
+  descripcion  String?
+  fecha        DateTime @default(now())
+  id_asesor    Int?
+
+  propiedad    Propiedad @relation(fields: [id_propiedad], references: [id_propiedad], onDelete: Cascade)
+  asesor       Asesor?   @relation(fields: [id_asesor], references: [id_asesor], onDelete: SetNull)
+
+  @@map("propiedades_actividades")
+}
+
+model PropiedadDocumento {
+  id_documento   Int      @id @default(autoincrement())
+  id_propiedad   Int
+  nombre_archivo String
+  tipo_documento String?
+  url            String
+  fecha_subida   DateTime @default(now())
+
+  propiedad      Propiedad @relation(fields: [id_propiedad], references: [id_propiedad], onDelete: Cascade)
+
+  @@map("propiedades_documentos")
+}
+
+model PropiedadNota {
+  id_nota      Int      @id @default(autoincrement())
+  id_propiedad Int
+  contenido    String
+  fecha        DateTime @default(now())
+
+  propiedad    Propiedad @relation(fields: [id_propiedad], references: [id_propiedad], onDelete: Cascade)
+
+  @@map("propiedades_notas")
+}
+
+model PropiedadHistorial {
+  id_historial   Int      @id @default(autoincrement())
+  id_propiedad   Int
+  fecha          DateTime @default(now())
+  usuario        String?
+  accion         String
+  descripcion    String?
+  campo          String?
+  valor_anterior String?
+  valor_nuevo    String?
+
+  propiedad      Propiedad @relation(fields: [id_propiedad], references: [id_propiedad], onDelete: Cascade)
+
+  @@map("propiedades_historial")
+}
+
+// ============================================================================
+// 4. CLIENTES Y TABLAS SATÉLITE
+// ============================================================================
+
+model Cliente {
+  id_cliente            Int       @id @default(autoincrement())
+  id_tenant             Int?
+
+  // Identificación
+  nombre                String
+  apellido_paterno      String
+  apellido_materno      String?
+  curp                  String?
+  rfc                   String?
+  fecha_nacimiento      String?
+  edad                  Int?
+  generacion            String?
+  genero                String?
+  estado_civil          String?
+  nacionalidad          String?
+
+  // Contacto
+  telefono_principal    String?
+  whatsapp              String?
+  lada                  String?
+  correo                String?
+
+  // Ubicación
+  pais                  String?   @default("MX")
+  estado                String?
+  municipio             String?
+  colonia               String?
+  codigo_postal         String?
+  fraccionamiento       String?
+  direccion             String?
+
+  // Perfil Demográfico
+  profesion             String?
+  puesto                String?
+  escolaridad           String?
+
+  // Perfil Familiar
+  conyuge               String?
+  conyuge_whatsapp      String?
+  hijos                 Int?
+  mascotas              Int?
+  integrantes_hogar     Int?
+  dependientes_eco      Int?
+  adultos_mayores_cargo Int?
+
+  // Perfil Financiero
+  nombre_empresa        String?
+  ocupacion             String?
+  antiguedad_laboral    String?
+  ingreso_mensual       Float?
+  tipo_credito          String?
+  presupuesto_min       Float?
+  presupuesto_max       Float?
+  enganche_disponible   Float?
+  pago_mensual_objetivo Float?
+  capacidad_credito_max Float?
+
+  // Preferencias del Inmueble
+  operacion               String?
+  tipo_propiedad          String?
+  estado_busqueda         String?
+  ciudad_busqueda         String?
+  fraccionamiento_colonia String?
+  habitaciones_pa         Int?
+  habitaciones_pb         Int?
+  banos                   Float?
+  estacionamiento         Int?
+  m2_terreno_min          Float?
+  m2_terreno_max          Float?
+  m2_construccion_min     Float?
+  m2_construccion_max     Float?
+  niveles_max             Int?
+  antiguedad_max          Int?
+  amenidades_deseadas     String?   // JSON array string
+
+  // Motivación y Temporalidad
+  motivacion            String?
+  temporalidad          String?
+
+  // Seguimiento Comercial
+  id_asesor             Int?
+  estado_cliente        String?   @default("nuevo")
+  referenciado          String?
+  fuente_lead           String?
+  campana               String?
+  medio_adquisicion     String?
+  utm_source            String?
+  utm_medium            String?
+  utm_campaign          String?
+  origen                String?
+  canal_captacion       String?
+
+  // Scores
+  score_cna            Float?
+  score_compatibilidad Float?
+
+  // Sistema
+  fecha_registro        DateTime  @default(now())
+  updatedAt             DateTime  @default(now()) @updatedAt
+  deletedAt             DateTime?
+
+  // Relaciones
+  tenant               Tenant?   @relation(fields: [id_tenant], references: [id_tenant], onDelete: Cascade)
+  asesor               Asesor?   @relation(fields: [id_asesor], references: [id_asesor], onDelete: SetNull)
+  actividades          ClienteActividad[]
+  documentos           ClienteDocumento[]
+  notas                ClienteNota[]
+  historial            ClienteHistorial[]
+  compatibilidades     CompatibilidadClientePropiedad[]
+  relacionesOrigen     RelacionCliente[] @relation("ClienteOrigen")
+  relacionesDestino    RelacionCliente[] @relation("ClienteDestino")
+
+  @@map("clientes")
+}
+
+model ClienteActividad {
+  id_actividad Int      @id @default(autoincrement())
+  id_cliente   Int
+  tipo         String
+  descripcion  String?
+  fecha        DateTime @default(now())
+  id_asesor    Int?
+
+  cliente      Cliente  @relation(fields: [id_cliente], references: [id_cliente], onDelete: Cascade)
+  asesor       Asesor?  @relation(fields: [id_asesor], references: [id_asesor], onDelete: SetNull)
+
+  @@map("clientes_actividades")
+}
+
+model ClienteDocumento {
+  id_documento   Int      @id @default(autoincrement())
+  id_cliente     Int
+  nombre_archivo String
+  tipo_documento String?
+  url            String
+  fecha_subida   DateTime @default(now())
+
+  cliente        Cliente  @relation(fields: [id_cliente], references: [id_cliente], onDelete: Cascade)
+
+  @@map("clientes_documentos")
+}
+
+model ClienteNota {
+  id_nota    Int      @id @default(autoincrement())
+  id_cliente Int
+  contenido  String
+  fecha      DateTime @default(now())
+
+  cliente    Cliente  @relation(fields: [id_cliente], references: [id_cliente], onDelete: Cascade)
+
+  @@map("clientes_notas")
+}
+
+model ClienteHistorial {
+  id_historial   Int      @id @default(autoincrement())
+  id_cliente     Int
+  fecha          DateTime @default(now())
+  usuario        String?
+  accion         String
+  descripcion    String?
+  campo          String?
+  valor_anterior String?
+  valor_nuevo    String?
+
+  cliente        Cliente  @relation(fields: [id_cliente], references: [id_cliente], onDelete: Cascade)
+
+  @@map("clientes_historial")
+}
+
+// ============================================================================
+// 5. MATCHING & CNA REDES & AUDITORÍA
+// ============================================================================
+
+model CompatibilidadClientePropiedad {
+  id_compat       Int      @id @default(autoincrement())
+  id_cliente      Int
+  id_propiedad    Int
+  score_total     Float
+  score_geo       Float?
+  score_economico Float?
+  score_fisico    Float?
+  score_familiar  Float?
+  score_demo      Float?
+  nivel           String?
+  detalle_json    Json?
+  fecha_calculo   DateTime @default(now()) @updatedAt
+
+  cliente         Cliente   @relation(fields: [id_cliente], references: [id_cliente], onDelete: Cascade)
+  propiedad       Propiedad @relation(fields: [id_propiedad], references: [id_propiedad], onDelete: Cascade)
+
+  @@unique([id_cliente, id_propiedad], name: "unique_compat")
+  @@map("compatibilidad_cliente_propiedad")
+}
+
+model RelacionCliente {
+  id_relacion        Int      @id @default(autoincrement())
+  cliente_origen_id  Int
+  cliente_destino_id Int
+  tipo_relacion      String
+  fecha_relacion     DateTime @default(now())
+  peso               Float    @default(1.00)
+
+  clienteOrigen      Cliente  @relation("ClienteOrigen", fields: [cliente_origen_id], references: [id_cliente], onDelete: Cascade)
+  clienteDestino     Cliente  @relation("ClienteDestino", fields: [cliente_destino_id], references: [id_cliente], onDelete: Cascade)
+
+  @@unique([cliente_origen_id, cliente_destino_id, tipo_relacion], name: "unique_cliente_rel")
+  @@map("relaciones_clientes_cna")
+}
+
+model RelacionAsesor {
+  id_relacion       Int      @id @default(autoincrement())
+  asesor_origen_id  Int
+  asesor_destino_id Int
+  tipo_relacion     String
+  fecha_relacion    DateTime @default(now())
+  peso              Float    @default(1.00)
+
+  asesorOrigen      Asesor   @relation("AsesorOrigen", fields: [asesor_origen_id], references: [id_asesor], onDelete: Cascade)
+  asesorDestino     Asesor   @relation("AsesorDestino", fields: [asesor_destino_id], references: [id_asesor], onDelete: Cascade)
+
+  @@unique([asesor_origen_id, asesor_destino_id, tipo_relacion], name: "unique_asesor_rel")
+  @@map("relaciones_asesores_cna")
+}
+
+model AuditoriaCambios {
+  id_auditoria   Int      @id @default(autoincrement())
+  tabla          String
+  id_registro    Int
+  campo          String
+  valor_anterior String?
+  valor_nuevo    String?
+  usuario        String?
+  fecha          DateTime @default(now())
+
+  @@map("auditoria_cambios")
 }
