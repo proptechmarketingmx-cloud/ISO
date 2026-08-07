@@ -8,6 +8,12 @@ function formatApiError(detail, fallback = 'Error en la petición al servidor') 
 }
 
 export async function apiFetch(endpoint, options = {}) {
+    // Si la aplicación legacy se abre desde Next.js (puerto 3000), sus
+    // rutas relativas /api no llegan a FastAPI. En Vite/Nginx se conserva el
+    // proxy relativo configurado para desarrollo y producción.
+    const apiEndpoint = window.location.port === '3000'
+        ? `http://localhost:8000${endpoint}`
+        : endpoint;
     const defaultHeaders = {
         'Content-Type': 'application/json',
     };
@@ -22,7 +28,7 @@ export async function apiFetch(endpoint, options = {}) {
 
     let response;
     try {
-        response = await fetch(endpoint, config);
+        response = await fetch(apiEndpoint, config);
     } catch (error) {
         console.error('API Error:', error);
         throw new Error('No se pudo conectar con el servidor. Verifique que el backend esté en ejecución.');
@@ -40,6 +46,10 @@ export async function apiFetch(endpoint, options = {}) {
     } else {
         const text = await response.text();
         if (!response.ok) {
+            if (response.status === 405) {
+                const allowed = response.headers.get('allow');
+                throw new Error(`Método ${config.method || 'GET'} no permitido${allowed ? `. Métodos permitidos: ${allowed}` : ''}`);
+            }
             throw new Error(text || `Error HTTP ${response.status}`);
         }
         return text || null;
