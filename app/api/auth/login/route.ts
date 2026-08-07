@@ -12,5 +12,9 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ user: { id_usuario: user.id_usuario, email: user.email, nombre: user.nombre } });
     response.cookies.set('iso_session', await createSession(user), { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 28800, path: '/' });
     return response;
-  } catch (error) { console.error('[Auth] Login failed', error); return NextResponse.json({ error: 'No fue posible iniciar sesión' }, { status: 500 }); }
+  } catch (error: any) {
+    console.error('[Auth] Login failed', error);
+    const databaseUnavailable = error?.code === 'P1001' || /ENOTFOUND|tenant\/user|database|postgres/i.test(String(error?.message));
+    return NextResponse.json({ error: databaseUnavailable ? 'El servicio de datos no está disponible. Verifica la conexión de la aplicación.' : 'No fue posible iniciar sesión' }, { status: databaseUnavailable ? 503 : 500 });
+  }
 }
