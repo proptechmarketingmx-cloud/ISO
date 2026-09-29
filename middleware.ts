@@ -2,11 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifySession } from '@/lib/auth';
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  if (pathname === '/login' || pathname.startsWith('/api/auth') || pathname.startsWith('/_next') || pathname.includes('.')) return NextResponse.next();
-  const token = request.cookies.get('iso_session')?.value;
-  if (!token) return NextResponse.redirect(new URL('/login', request.url));
-  try { await verifySession(token); return NextResponse.next(); } catch { return NextResponse.redirect(new URL('/login', request.url)); }
+  // 1. Verificamos la sesión (por ahora, nuestro mock devolverá el usuario admin)
+  const session = await verifySession();
+
+  // 2. Si no hay sesión (en el futuro, cuando implementemos Supabase real), redirigimos al login
+  if (!session) {
+    const loginUrl = new URL('/login', request.url);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // 3. Si hay sesión, permitimos que la solicitud continúe hacia el dashboard
+  return NextResponse.next();
 }
 
-export const config = { matcher: ['/((?!api/auth).*)'] };
+// Configuramos el middleware para que solo intercepte las rutas del dashboard
+export const config = {
+  matcher: ['/dashboard/:path*'],
+};
