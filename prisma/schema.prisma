@@ -21,6 +21,7 @@ model Tenant {
   asesores    Asesor[]
   propiedades Propiedad[]
   clientes    Cliente[]
+  oportunidades Oportunidad[]
 
   @@map("tenants")
 }
@@ -112,6 +113,7 @@ model Asesor {
   clientes             Cliente[]
   actividadesPropiedad PropiedadActividad[]
   actividadesCliente   ClienteActividad[]
+  oportunidades        Oportunidad[]
 
   @@index([id_tenant])
   @@map("asesores")
@@ -198,6 +200,7 @@ model Propiedad {
   notas            PropiedadNota[]
   historial        PropiedadHistorial[]
   compatibilidades CompatibilidadClientePropiedad[]
+  oportunidades    Oportunidad[]
 
   @@index([id_tenant])
   @@index([status])
@@ -367,6 +370,7 @@ model Cliente {
   notas            ClienteNota[]
   historial        ClienteHistorial[]
   compatibilidades CompatibilidadClientePropiedad[]
+  oportunidades    Oportunidad[]
 
   @@index([id_tenant])
   @@index([deletedAt])
@@ -457,4 +461,39 @@ model AuditoriaCambios {
   fecha          DateTime @default(now())
 
   @@map("auditoria_cambios")
+}
+
+enum EstadoOportunidad {
+  NUEVO
+  CONTACTADO
+  VISITA_PROGRAMADA
+  EN_NEGOCIACION
+  CERRADO_GANADO
+  CERRADO_PERDIDO
+}
+
+model Oportunidad {
+  id_oportunidad        Int               @id @default(autoincrement())
+  id_tenant             Int
+  id_cliente            Int
+  id_asesor             Int?
+  id_propiedad          Int?
+  titulo                String            @default("Nueva Oportunidad")
+  estado                EstadoOportunidad @default(NUEVO)
+  valor_estimado        Float?
+  probabilidad          Int               @default(10) // 10 a 100
+  notas                 String?
+  fecha_cierre_estimada DateTime?
+  creado_en             DateTime          @default(now())
+  actualizado_en        DateTime          @updatedAt
+
+  tenant    Tenant     @relation(fields: [id_tenant], references: [id_tenant], onDelete: Cascade)
+  cliente   Cliente    @relation(fields: [id_cliente], references: [id_cliente], onDelete: Cascade)
+  asesor    Asesor?    @relation(fields: [id_asesor], references: [id_asesor], onDelete: SetNull)
+  propiedad Propiedad? @relation(fields: [id_propiedad], references: [id_propiedad], onDelete: SetNull)
+
+  @@index([id_tenant])
+  @@index([id_cliente])
+  @@index([estado])
+  @@map("oportunidades")
 }

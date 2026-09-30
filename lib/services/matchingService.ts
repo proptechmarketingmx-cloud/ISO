@@ -13,13 +13,14 @@ export function getNivelScore(score: number): 'excelente' | 'alta' | 'media' | '
   return 'baja';
 }
 
-function parseJsonList(val: string | null | undefined): string[] {
+function parseJsonList(val: string[] | string | null | undefined): string[] {
   if (!val) return [];
+  if (Array.isArray(val)) return val;
   try {
     const parsed = JSON.parse(val);
-    return Array.isArray(parsed) ? parsed.map(String) : [];
+    return Array.isArray(parsed) ? parsed.map(String) : [String(val)];
   } catch {
-    return [];
+    return [String(val)];
   }
 }
 
