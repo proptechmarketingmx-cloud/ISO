@@ -45,7 +45,7 @@ export default async function EditarClientePage({
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" asChild>
           <Link href="/dashboard/clients">
@@ -62,13 +62,7 @@ export default async function EditarClientePage({
 
       <ClientForm
         initialData={{
-          id_cliente: client.id_cliente,
-          nombre: client.nombre,
-          apellido_paterno: client.apellido_paterno,
-          correo: client.correo,
-          telefono_principal: client.telefono_principal,
-          presupuesto_min: client.presupuesto_min,
-          operacion: client.operacion,
+          ...client,
           ultimaNota: client.notas[0]?.contenido || null,
         }}
       />
