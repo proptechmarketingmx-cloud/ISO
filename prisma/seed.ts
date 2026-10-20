@@ -1,4 +1,4 @@
-import { PrismaClient, Rol } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -9,12 +9,17 @@ async function main() {
 
   const admin = await prisma.usuario.upsert({
     where: { email },
-    update: {},
+    update: {
+      nombre: "Administrador",
+      passwordHash,
+      rol: "ADMIN",
+      activo: true,
+    },
     create: {
       nombre: "Administrador",
       email,
       passwordHash,
-      rol: Rol.ADMIN,
+      rol: "ADMIN",
       activo: true,
     },
   });

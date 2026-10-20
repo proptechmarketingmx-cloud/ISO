@@ -11,12 +11,6 @@ datasource db {
 // ENUMS Y CATÁLOGOS
 // ============================================
 
-enum Rol {
-  ADMIN
-  GERENTE
-  ASESOR
-}
-
 enum EstadoLead {
   NUEVO
   CONTACTADO
@@ -57,14 +51,14 @@ model Usuario {
   id            String     @id @default(uuid())
   nombre        String
   email         String     @unique
-  passwordHash  String
-  rol           Rol        @default(ASESOR)
+  passwordHash  String?
+  rol           String     @default("asesor") @map("role")
   activo        Boolean    @default(true)
   ultimoAcceso  DateTime?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
-  @@map("usuarios")
+  @@map("Usuario")
 }
 
 // ============================================

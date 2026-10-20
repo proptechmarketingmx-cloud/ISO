@@ -1,0 +1,5 @@
+ALTER TABLE "Usuario"
+ADD COLUMN IF NOT EXISTS "passwordHash" TEXT;
+
+ALTER TABLE "Usuario"
+ADD COLUMN IF NOT EXISTS "ultimoAcceso" TIMESTAMP(3);

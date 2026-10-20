@@ -1,10 +1,8 @@
 // src/lib/auth.ts
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -15,25 +13,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Contraseña", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (
+          typeof credentials?.email !== "string" ||
+          typeof credentials.password !== "string"
+        ) {
           throw new Error("Credenciales inválidas");
         }
 
         const usuario = await prisma.usuario.findUnique({
-          where: { email: credentials.email as string },
+          where: { email: credentials.email },
         });
 
-        if (!usuario || !usuario.activo) {
-          throw new Error("Usuario no encontrado o inactivo");
+        if (!usuario || !usuario.activo || !usuario.passwordHash) {
+          throw new Error("Credenciales inválidas");
         }
 
         const passwordValido = await bcrypt.compare(
-          credentials.password as string,
+          credentials.password,
           usuario.passwordHash
         );
 
         if (!passwordValido) {
-          throw new Error("Contraseña incorrecta");
+          throw new Error("Credenciales inválidas");
         }
 
         // Actualizar último acceso
@@ -44,9 +45,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         return {
           id: usuario.id,
+          name: usuario.nombre,
           nombre: usuario.nombre,
           email: usuario.email,
-          rol: usuario.rol,
+          rol: usuario.rol.toUpperCase(),
         };
       },
     }),
@@ -65,6 +67,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string;
         session.user.rol = token.rol as string;
         session.user.nombre = token.nombre as string;
+        session.user.name = token.nombre as string;
       }
       return session;
     },
