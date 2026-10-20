@@ -82,18 +82,18 @@ model Cliente {
   ingresoMensual            Float?
   
   // Preferencias (para Matching)
-  tipoOperacionDeseada      String?      // ID de TipoOperacion
-  tipoPropiedadDeseada      String?      // ID de TipoPropiedad
+  tipoOperacionDeseada      String?      
+  tipoPropiedadDeseada      String?      
   recamarasMin              Int?
   banosMin                  Float?
   m2TerrenoMin              Float?
   m2ConstruccionMin         Float?
-  ubicacionesPreferidas     Json?        // Array de ciudades/colonias
-  
+  ubicacionesPreferidas     Json?        
+        
   // Sistema de Referidos (CNA)
-  referidoPorClienteId      Int?         // Opción B: obligatorio después de crear
-  referidoPorAsesorId       String?      // Si un asesor lo refirió
-  esReferidoObligatorio     Boolean      @default(false) // Flag para validar
+  referidoPorClienteId      Int?         
+  referidoPorAsesorId       String?      
+  esReferidoObligatorio     Boolean      @default(false) 
   
   // CNA Scoring
   scoreCna                  Float        @default(0)
@@ -105,14 +105,13 @@ model Cliente {
   fechaRegistro             DateTime     @default(now())
   updatedAt                 DateTime     @updatedAt
   
-  // Relaciones
-  referidoPorCliente        Cliente?     @relation("ReferidosCliente", fields: [referidoPorClienteId], references: [id])
-  referidosClientes         Cliente[]    @relation("ReferidosCliente")
-  referidoPorAsesor         Asesor?      @relation("ReferidosAsesor", fields: [referidoPorAsesorId], references: [id])
-  referidosAsesores         Asesor[]     @relation("ReferidosAsesor")
+  // === RELACIONES (Todo esto debe estar DENTRO de las llaves del modelo) ===
+  referidoPorCliente        Cliente?     @relation("ClienteRefiereCliente", fields: [referidoPorClienteId], references: [id])
+  referidosClientes         Cliente[]    @relation("ClienteRefiereCliente")
+  referidoPorAsesor         Asesor?      @relation("AsesorRefiereCliente", fields: [referidoPorAsesorId], references: [id])
   
-  oportunidades           Oportunidad[]
-  compatibilidades        CompatibilidadClientePropiedad[]
+  oportunidades             Oportunidad[]
+  compatibilidades          CompatibilidadClientePropiedad[]
   
   @@index([estadoLead])
   @@index([scoreCna])
@@ -142,10 +141,16 @@ model Asesor {
   fechaRegistro             DateTime     @default(now())
   updatedAt                 DateTime     @updatedAt
   
-  // Relaciones
-  clientesReferidos         Cliente[]    @relation("ReferidosAsesor")
-  propiedades             Propiedad[]
-  oportunidades           Oportunidad[]
+  // === RELACIONES (Todo esto debe estar DENTRO de las llaves del modelo) ===
+  clientesReferidos         Cliente[]    @relation("AsesorRefiereCliente")
+  
+  // Relación: Este asesor fue referido por otro asesor (para compartir comisión)
+  referidoPorAsesorId       String?      
+  referidoPorAsesor         Asesor?      @relation("AsesorRefiereAsesor", fields: [referidoPorAsesorId], references: [id])
+  asesoresReferidos         Asesor[]     @relation("AsesorRefiereAsesor")
+  
+  propiedades               Propiedad[]
+  oportunidades             Oportunidad[]
   
   @@map("asesores")
 }
@@ -304,3 +309,16 @@ model Usuario {
 
   @@map("usuarios")
 }
+
+
+
+// En el modelo Cliente:
+  referidoPorCliente        Cliente?     @relation("ClienteRefiereCliente", fields: [referidoPorClienteId], references: [id])
+  referidosClientes         Cliente[]    @relation("ClienteRefiereCliente")
+  referidoPorAsesor         Asesor?      @relation("AsesorRefiereCliente", fields: [referidoPorAsesorId], references: [id])
+
+// En el modelo Asesor:
+  clientesReferidos         Cliente[]    @relation("AsesorRefiereCliente")
+  referidoPorAsesorId       String?      @unique
+  referidoPorAsesor         Asesor?      @relation("AsesorRefiereAsesor", fields: [referidoPorAsesorId], references: [id])
+  asesoresReferidos         Asesor[]     @relation("AsesorRefiereAsesor")
