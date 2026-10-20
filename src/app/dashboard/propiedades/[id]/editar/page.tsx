@@ -3,7 +3,8 @@ import { notFound } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
 import { PropertyForm } from "../../_components/property-form"
 
 interface EditarPropiedadPageProps {
@@ -23,8 +24,10 @@ export default async function EditarPropiedadPage({
     notFound()
   }
 
-  const session = await verifySession()
-  const tenantId = session?.tenantId || 1
+  const session = await auth()
+  const user = session?.user
+  if (!user) redirect("/login")
+  const tenantId = 1
 
   const property = await prisma.propiedad.findUnique({
     where: {

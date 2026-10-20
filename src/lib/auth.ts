@@ -17,7 +17,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           typeof credentials?.email !== "string" ||
           typeof credentials.password !== "string"
         ) {
-          throw new Error("Credenciales inválidas");
+          return null;
         }
 
         const usuario = await prisma.usuario.findUnique({
@@ -25,7 +25,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
 
         if (!usuario || !usuario.activo || !usuario.passwordHash) {
-          throw new Error("Credenciales inválidas");
+          return null;
         }
 
         const passwordValido = await bcrypt.compare(
@@ -34,7 +34,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         );
 
         if (!passwordValido) {
-          throw new Error("Credenciales inválidas");
+          return null;
         }
 
         // Actualizar último acceso

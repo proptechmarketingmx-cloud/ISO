@@ -27,18 +27,34 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    if (result?.error) {
-      setError("Credenciales inválidas");
+      if (result?.error) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("NextAuth sign-in failed:", result.error);
+        }
+        setError("Credenciales inválidas");
+        return;
+      }
+
+      if (result?.ok) {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        setError("No fue posible iniciar sesión. Inténtalo de nuevo.");
+      }
+    } catch (signInError) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("NextAuth sign-in request failed:", signInError);
+      }
+      setError("No fue posible iniciar sesión. Inténtalo de nuevo.");
+    } finally {
       setLoading(false);
-    } else {
-      router.push("/dashboard/clientes");
-      router.refresh();
     }
   };
 

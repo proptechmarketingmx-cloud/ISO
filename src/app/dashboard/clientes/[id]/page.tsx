@@ -20,7 +20,8 @@ import {
   Briefcase,
 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -44,8 +45,10 @@ export default async function ClienteDetailPage({ params }: Props) {
     notFound()
   }
 
-  const session = await verifySession()
-  const tenantId = session?.tenantId || 1
+  const session = await auth()
+  const user = session?.user
+  if (!user) redirect("/login")
+  const tenantId = 1
 
   // Fetch cliente con relaciones
   const cliente = await prisma.cliente.findFirst({

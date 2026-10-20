@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { EstadoOportunidad } from "@prisma/client"
 
 // ─── Schemas ────────────────────────────────────────────────────────────────
@@ -29,8 +29,10 @@ export async function createOportunidad(
   formData: FormData
 ): Promise<PipelineActionState> {
   try {
-    const session = await verifySession()
-    const tenantId = session?.tenantId || 1
+    const session = await auth()
+    const user = session?.user
+    if (!user) return { error: "No autenticado" }
+    const tenantId = 1
 
     const rawData = {
       titulo: formData.get("titulo"),
@@ -92,8 +94,10 @@ export async function updateOportunidadEstado(
   nuevoEstado: EstadoOportunidad
 ): Promise<PipelineActionState> {
   try {
-    const session = await verifySession()
-    const tenantId = session?.tenantId || 1
+    const session = await auth()
+    const user = session?.user
+    if (!user) return { error: "No autenticado" }
+    const tenantId = 1
 
     const existente = await prisma.oportunidad.findFirst({
       where: { id_oportunidad: id, id_tenant: tenantId },
@@ -120,8 +124,10 @@ export async function updateOportunidadEstado(
 // ─── Delete Oportunidad ──────────────────────────────────────────────────────
 export async function deleteOportunidad(id: number): Promise<PipelineActionState> {
   try {
-    const session = await verifySession()
-    const tenantId = session?.tenantId || 1
+    const session = await auth()
+    const user = session?.user
+    if (!user) return { error: "No autenticado" }
+    const tenantId = 1
 
     const existente = await prisma.oportunidad.findFirst({
       where: { id_oportunidad: id, id_tenant: tenantId },

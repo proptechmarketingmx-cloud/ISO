@@ -12,7 +12,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 
@@ -24,8 +25,10 @@ const statusColor: Record<string, "default" | "secondary" | "destructive" | "out
 }
 
 export default async function PropertiesPage() {
-  const session = await verifySession()
-  const tenantId = session?.tenantId || 1
+  const session = await auth()
+  const user = session?.user
+  if (!user) redirect("/login")
+  const tenantId = 1
 
   const properties = await prisma.propiedad.findMany({
     where: {

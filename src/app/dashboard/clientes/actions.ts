@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 
 // Schema expandido para coincidir con la ficha de detalle
 const createClientSchema = z.object({
@@ -96,8 +96,10 @@ export async function createClient(
     }
 
     const validatedData = validation.data
-    const session = await verifySession()
-    const tenantId = session?.tenantId || 1
+    const session = await auth()
+    const user = session?.user
+    if (!user) return { error: "No autenticado" }
+    const tenantId = 1
     
     const partesNombre = validatedData.nombre.trim().split(/\s+/)
     const apellidoPaterno = partesNombre.length > 1 ? partesNombre.slice(1).join(" ") : "-"
@@ -149,8 +151,10 @@ export async function updateClient(
   formData: FormData
 ): Promise<CreateClientState> {
   try {
-    const session = await verifySession()
-    const tenantId = session?.tenantId || 1
+    const session = await auth()
+    const user = session?.user
+    if (!user) return { error: "No autenticado" }
+    const tenantId = 1
 
     if (!id || typeof id !== "number" || isNaN(id)) {
       return { error: "Identificador de cliente inválido" }
@@ -279,8 +283,10 @@ export async function updateClientEstado(
   nuevoEstado: string
 ): Promise<CreateClientState> {
   try {
-    const session = await verifySession()
-    const tenantId = session?.tenantId || 1
+    const session = await auth()
+    const user = session?.user
+    if (!user) return { error: "No autenticado" }
+    const tenantId = 1
 
     const validEstados = [
       "nuevo",
@@ -325,8 +331,10 @@ export async function assignClientAsesor(
   idAsesor: number | null
 ): Promise<CreateClientState> {
   try {
-    const session = await verifySession()
-    const tenantId = session?.tenantId || 1
+    const session = await auth()
+    const user = session?.user
+    if (!user) return { error: "No autenticado" }
+    const tenantId = 1
 
     const cliente = await prisma.cliente.findFirst({
       where: { id_cliente: id, id_tenant: tenantId, deletedAt: null },

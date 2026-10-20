@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 
 const propiedadSchema = z.object({
   titulo: z.string().trim().min(3, "El título debe tener al menos 3 caracteres"),
@@ -52,8 +52,10 @@ export async function createProperty(formData: FormData): Promise<PropertyAction
       }
     }
 
-    const session = await verifySession()
-    const tenantId = session?.tenantId || 1
+    const session = await auth()
+    const user = session?.user
+    if (!user) return { error: "No autenticado" }
+    const tenantId = 1
     const validatedData = validation.data
 
     const nuevaPropiedad = await prisma.propiedad.create({
@@ -99,8 +101,10 @@ export async function updateProperty(
   formData: FormData
 ): Promise<PropertyActionState> {
   try {
-    const session = await verifySession()
-    const tenantId = session?.tenantId || 1
+    const session = await auth()
+    const user = session?.user
+    if (!user) return { error: "No autenticado" }
+    const tenantId = 1
 
     if (!id || typeof id !== "number" || isNaN(id)) {
       return { error: "Identificador de propiedad inválido" }

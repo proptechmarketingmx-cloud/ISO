@@ -1,6 +1,8 @@
 import { Kanban } from "lucide-react"
+import Link from "next/link"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
 import { KanbanBoard, type OportunidadCard } from "./_components/kanban-board"
 import { NuevaOportunidadDialog } from "./_components/nueva-oportunidad-dialog"
 import { EstadoOportunidad } from "@prisma/client"
@@ -8,8 +10,10 @@ import { EstadoOportunidad } from "@prisma/client"
 export const dynamic = "force-dynamic"
 
 export default async function PipelinePage() {
-  const session = await verifySession()
-  const tenantId = session?.tenantId || 1
+  const session = await auth()
+  const user = session?.user
+  if (!user) redirect("/login")
+  const tenantId = 1
 
   type OportunidadRecord = {
     id_oportunidad: number
@@ -151,9 +155,9 @@ export default async function PipelinePage() {
         <div className="rounded-lg border border-dashed p-12 text-center">
           <p className="text-muted-foreground text-sm">
             Necesitas al menos un cliente para crear oportunidades de venta.{" "}
-            <a href="/dashboard/clientes/nueva" className="text-primary underline">
+            <Link href="/dashboard/clientes/nueva" className="text-primary underline">
               Agrega un cliente
-            </a>
+            </Link>
             .
           </p>
         </div>
