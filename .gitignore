@@ -12,3 +12,5 @@ backend/venv/
 .env*
 next-env.d.ts
 *.tsbuildinfo
+origin	https://github.com/proptechmarketingmx-cloud/ISO.git (fetch)
+origin	https://github.com/proptechmarketingmx-cloud/ISO.git (push)

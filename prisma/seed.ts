@@ -4,11 +4,16 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = process.env.ADMIN_EMAIL;
+  const configuredEmail = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
 
-  if (!email || !password) {
+  if (!configuredEmail || !password) {
     throw new Error("ADMIN_EMAIL y ADMIN_PASSWORD deben estar configuradas");
+  }
+
+  const email = configuredEmail.trim().toLowerCase();
+  if (!email) {
+    throw new Error("ADMIN_EMAIL no puede estar vacía");
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
