@@ -280,3 +280,27 @@ model CompatibilidadClientePropiedad {
   @@index([scoreTotal])
   @@map("compatibilidad_cliente_propiedad")
 }
+
+// ============================================
+// AUTENTICACIÓN Y ROLES
+// ============================================
+
+enum Rol {
+  ADMIN
+  GERENTE
+  ASESOR
+}
+
+model Usuario {
+  id            String     @id @default(uuid())
+  nombre        String
+  email         String     @unique
+  passwordHash  String
+  rol           Rol        @default(ASESOR)
+  activo        Boolean    @default(true)
+  ultimoAcceso  DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@map("usuarios")
+}

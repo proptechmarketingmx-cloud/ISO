@@ -1,26 +1,24 @@
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
+// src/app/(dashboard)/layout.tsx
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { Sidebar } from "@/components/layout/sidebar";
+import { Header } from "@/components/layout/header";
 
-const inter = Inter({
-  subsets: ["latin"],
-})
-
-export const metadata: Metadata = {
-  title: "ISO — Plataforma Inmobiliaria",
-  description: "CRM inmobiliario para equipos de asesores",
-}
-
-export default function RootLayout({
+export default async function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
+  const session = await auth();
+  if (!session) redirect("/login");
+
   return (
-    <html lang="es" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased`}>
-        {children}
-      </body>
-    </html>
-  )
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950">
+      <Sidebar rol={session.user.rol as string} />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header usuario={session.user} />
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+      </div>
+    </div>
+  );
 }
