@@ -10,3 +10,5 @@ backend/venv/
 *.log
 .next/
 .env*
+next-env.d.ts
+*.tsbuildinfo

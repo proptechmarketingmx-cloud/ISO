@@ -20,7 +20,7 @@ export default auth((req) => {
 
   // Si está autenticado y es ruta pública, redirigir a dashboard
   if (estaAutenticado && esRutaPublica) {
-    return NextResponse.redirect(new URL("/clientes", nextUrl));
+    return NextResponse.redirect(new URL("/dashboard/clientes", nextUrl));
   }
 
   // Control de roles
@@ -36,7 +36,7 @@ export default auth((req) => {
     if (rol === "GERENTE" && RUTAS_ADMIN.some((ruta) =>
       nextUrl.pathname.startsWith(ruta)
     )) {
-      return NextResponse.redirect(new URL("/clientes", nextUrl));
+      return NextResponse.redirect(new URL("/dashboard/clientes", nextUrl));
     }
 
     // ASESOR: solo puede ver sus propios datos (filtrado en el backend)
@@ -45,7 +45,7 @@ export default auth((req) => {
         RUTAS_ADMIN.some((ruta) => nextUrl.pathname.startsWith(ruta)) ||
         RUTAS_GERENTE.some((ruta) => nextUrl.pathname.startsWith(ruta))
       ) {
-        return NextResponse.redirect(new URL("/clientes", nextUrl));
+        return NextResponse.redirect(new URL("/dashboard/clientes", nextUrl));
       }
     }
   }

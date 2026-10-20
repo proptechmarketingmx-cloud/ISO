@@ -151,7 +151,7 @@ export default async function PipelinePage() {
         <div className="rounded-lg border border-dashed p-12 text-center">
           <p className="text-muted-foreground text-sm">
             Necesitas al menos un cliente para crear oportunidades de venta.{" "}
-            <a href="/dashboard/clients/nueva" className="text-primary underline">
+            <a href="/dashboard/clientes/nueva" className="text-primary underline">
               Agrega un cliente
             </a>
             .
