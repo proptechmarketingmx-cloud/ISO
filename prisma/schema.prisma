@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,8 +8,26 @@ datasource db {
 }
 
 // ============================================
-// TABLAS CATÁLOGO (Dinámicas)
+// ENUMS Y CATÁLOGOS
 // ============================================
+
+enum Rol {
+  ADMIN
+  GERENTE
+  ASESOR
+}
+
+enum EstadoLead {
+  NUEVO
+  CONTACTADO
+  CALIFICADO
+  VISITA_AGENDADA
+  PROPUESTA_ENVIADA
+  NEGOCIACION
+  CERRADO_GANADO
+  CERRADO_PERDIDO
+  DESCARTADO
+}
 
 model TipoPropiedad {
   id          Int          @id @default(autoincrement())
@@ -25,7 +41,7 @@ model TipoPropiedad {
 
 model TipoOperacion {
   id          Int          @id @default(autoincrement())
-  nombre      String       @unique // Venta, Renta, Compra
+  nombre      String       @unique
   descripcion String?
   activo      Boolean      @default(true)
   propiedades Propiedad[]
@@ -34,19 +50,58 @@ model TipoOperacion {
 }
 
 // ============================================
-// ESTADOS DE LEADS (Máquina de estados)
+// USUARIOS DEL SISTEMA
 // ============================================
 
-enum EstadoLead {
-  NUEVO
-  CONTACTADO
-  CALIFICADO
-  VISITA_AGENDADA
-  PROPUESTA_ENVIADA
-  NEGOCIACION
-  CERRADO_GANADO
-  CERRADO_PERDIDO
-  DESCARTADO
+model Usuario {
+  id            String     @id @default(uuid())
+  nombre        String
+  email         String     @unique
+  passwordHash  String
+  rol           Rol        @default(ASESOR)
+  activo        Boolean    @default(true)
+  ultimoAcceso  DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@map("usuarios")
+}
+
+// ============================================
+// ASESORES
+// ============================================
+
+model Asesor {
+  id                        String       @id @default(uuid())
+  version                   Int          @default(1) // Optimistic locking
+  
+  nombre                    String
+  email                     String       @unique
+  telefono                  String?
+  estado                    String?
+  activo                    Boolean      @default(true)
+  
+  // CNA Scoring para Asesores
+  scoreCna                  Float        @default(0)
+  totalReferidosGenerados   Int          @default(0)
+  valorVentasReferidos      Float        @default(0)
+  
+  // Metadata
+  fechaRegistro             DateTime     @default(now())
+  updatedAt                 DateTime     @updatedAt
+  
+  // Relaciones
+  clientesReferidos         Cliente[]    @relation("AsesorRefiereCliente")
+  
+  // Relación: Este asesor fue referido por otro asesor (para compartir comisión)
+  referidoPorAsesorId       String?      
+  referidoPorAsesor         Asesor?      @relation("AsesorRefiereAsesor", fields: [referidoPorAsesorId], references: [id])
+  asesoresReferidos         Asesor[]     @relation("AsesorRefiereAsesor")
+  
+  propiedades               Propiedad[]
+  oportunidades             Oportunidad[]
+  
+  @@map("asesores")
 }
 
 // ============================================
@@ -105,7 +160,7 @@ model Cliente {
   fechaRegistro             DateTime     @default(now())
   updatedAt                 DateTime     @updatedAt
   
-  // === RELACIONES (Todo esto debe estar DENTRO de las llaves del modelo) ===
+  // Relaciones
   referidoPorCliente        Cliente?     @relation("ClienteRefiereCliente", fields: [referidoPorClienteId], references: [id])
   referidosClientes         Cliente[]    @relation("ClienteRefiereCliente")
   referidoPorAsesor         Asesor?      @relation("AsesorRefiereCliente", fields: [referidoPorAsesorId], references: [id])
@@ -116,43 +171,6 @@ model Cliente {
   @@index([estadoLead])
   @@index([scoreCna])
   @@map("clientes")
-}
-
-// ============================================
-// ASESORES
-// ============================================
-
-model Asesor {
-  id                        String       @id @default(uuid())
-  version                   Int          @default(1) // Optimistic locking
-  
-  nombre                    String
-  email                     String       @unique
-  telefono                  String?
-  estado                    String?
-  activo                    Boolean      @default(true)
-  
-  // CNA Scoring para Asesores
-  scoreCna                  Float        @default(0)
-  totalReferidosGenerados   Int          @default(0)
-  valorVentasReferidos      Float        @default(0)
-  
-  // Metadata
-  fechaRegistro             DateTime     @default(now())
-  updatedAt                 DateTime     @updatedAt
-  
-  // === RELACIONES (Todo esto debe estar DENTRO de las llaves del modelo) ===
-  clientesReferidos         Cliente[]    @relation("AsesorRefiereCliente")
-  
-  // Relación: Este asesor fue referido por otro asesor (para compartir comisión)
-  referidoPorAsesorId       String?      
-  referidoPorAsesor         Asesor?      @relation("AsesorRefiereAsesor", fields: [referidoPorAsesorId], references: [id])
-  asesoresReferidos         Asesor[]     @relation("AsesorRefiereAsesor")
-  
-  propiedades               Propiedad[]
-  oportunidades             Oportunidad[]
-  
-  @@map("asesores")
 }
 
 // ============================================
@@ -190,10 +208,10 @@ model Propiedad {
   antiguedad                Int?
   
   // Características específicas (JSONB para flexibilidad)
-  caracteristicasEspec      Json?        // Ej: {"frente": 10, "fondo": 20} para terrenos
+  caracteristicasEspec      Json?
   
   // Amenidades (para Matching)
-  amenidades                Json?        // Array: ["Alberca", "Seguridad 24/7", etc.]
+  amenidades                Json?
   
   // Datos financieros
   precio                    Float
@@ -216,8 +234,8 @@ model Propiedad {
   tipoOperacion             TipoOperacion @relation(fields: [tipoOperacionId], references: [id])
   asesor                    Asesor?      @relation(fields: [asesorId], references: [id])
   
-  oportunidades           Oportunidad[]
-  compatibilidades        CompatibilidadClientePropiedad[]
+  oportunidades             Oportunidad[]
+  compatibilidades          CompatibilidadClientePropiedad[]
   
   @@index([tipoPropiedadId])
   @@index([tipoOperacionId])
@@ -226,7 +244,7 @@ model Propiedad {
 }
 
 // ============================================
-// OPORTUNIDADES (Ventas potenciales)
+// OPORTUNIDADES
 // ============================================
 
 model Oportunidad {
@@ -238,7 +256,7 @@ model Oportunidad {
   
   estado                    EstadoLead   @default(NUEVO)
   valorEstimado             Float?
-  probabilidadCierre        Int          @default(10) // 10-100
+  probabilidadCierre        Int          @default(10)
   
   notas                     String?
   fechaCierreEstimada       DateTime?
@@ -258,7 +276,7 @@ model Oportunidad {
 }
 
 // ============================================
-// MATCHING: Compatibilidad Cliente-Propiedad
+// MATCHING: Compatibilidad
 // ============================================
 
 model CompatibilidadClientePropiedad {
@@ -267,14 +285,12 @@ model CompatibilidadClientePropiedad {
   clienteId                 Int
   propiedadId               Int
   
-  // Scores calculados automáticamente
   scoreTotal                Float
-  scorePrecio               Float?       // Qué tan bien encaja el precio
-  scoreUbicacion            Float?       // Coincidencia de ubicación
-  scoreCaracteristicas      Float?       // Recámaras, baños, m2
-  scoreAmenidades           Float?       // Coincidencia de amenidades
+  scorePrecio               Float?
+  scoreUbicacion            Float?
+  scoreCaracteristicas      Float?
+  scoreAmenidades           Float?
   
-  // Metadata
   fechaCalculo              DateTime     @default(now())
   
   // Relaciones
@@ -285,40 +301,3 @@ model CompatibilidadClientePropiedad {
   @@index([scoreTotal])
   @@map("compatibilidad_cliente_propiedad")
 }
-
-// ============================================
-// AUTENTICACIÓN Y ROLES
-// ============================================
-
-enum Rol {
-  ADMIN
-  GERENTE
-  ASESOR
-}
-
-model Usuario {
-  id            String     @id @default(uuid())
-  nombre        String
-  email         String     @unique
-  passwordHash  String
-  rol           Rol        @default(ASESOR)
-  activo        Boolean    @default(true)
-  ultimoAcceso  DateTime?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-
-  @@map("usuarios")
-}
-
-
-
-// En el modelo Cliente:
-  referidoPorCliente        Cliente?     @relation("ClienteRefiereCliente", fields: [referidoPorClienteId], references: [id])
-  referidosClientes         Cliente[]    @relation("ClienteRefiereCliente")
-  referidoPorAsesor         Asesor?      @relation("AsesorRefiereCliente", fields: [referidoPorAsesorId], references: [id])
-
-// En el modelo Asesor:
-  clientesReferidos         Cliente[]    @relation("AsesorRefiereCliente")
-  referidoPorAsesorId       String?      @unique
-  referidoPorAsesor         Asesor?      @relation("AsesorRefiereAsesor", fields: [referidoPorAsesorId], references: [id])
-  asesoresReferidos         Asesor[]     @relation("AsesorRefiereAsesor")
