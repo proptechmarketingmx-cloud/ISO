@@ -1,56 +1,32 @@
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient, Rol } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Iniciando seed de la base de datos...")
+  const email = "admin@empresa.com";
+  const passwordHash = await bcrypt.hash("admin123", 12);
 
-  // 1. Crear o actualizar Tenant base
-  const tenant = await prisma.tenant.upsert({
-    where: { slug: "proptech-mx" },
-    update: {
-      nombre: "PropTech MX",
+  const admin = await prisma.usuario.upsert({
+    where: { email },
+    update: {},
+    create: {
+      nombre: "Administrador",
+      email,
+      passwordHash,
+      rol: Rol.ADMIN,
       activo: true,
     },
-    create: {
-      nombre: "PropTech MX",
-      slug: "proptech-mx",
-      plan: "pro",
-      activo: true,
-    },
-  })
+  });
 
-  console.log(`Tenant listo: ${tenant.nombre} (ID: ${tenant.id_tenant})`)
-
-  // 2. Crear o actualizar Asesor base
-  const asesor = await prisma.asesor.upsert({
-    where: { correo: "admin@proptech.mx" },
-    update: {
-      nombre: "Admin",
-      apellidos: "Principal",
-      id_tenant: tenant.id_tenant,
-      status: "activo",
-    },
-    create: {
-      id_tenant: tenant.id_tenant,
-      nombre: "Admin",
-      apellidos: "Principal",
-      correo: "admin@proptech.mx",
-      telefono: "5512345678",
-      status: "activo",
-    },
-  })
-
-  console.log(`Asesor listo: ${asesor.nombre} ${asesor.apellidos} (ID: ${asesor.id_asesor})`)
-
-  console.log("Seed completado exitosamente.")
+  console.log(`Usuario administrador listo: ${admin.email}`);
 }
 
 main()
-  .catch((e) => {
-    console.error("Error durante el seed:", e)
-    process.exit(1)
+  .catch((error: unknown) => {
+    console.error("Error durante el seed del administrador:", error);
+    process.exitCode = 1;
   })
   .finally(async () => {
-    await prisma.$disconnect()
-  })
+    await prisma.$disconnect();
+  });
