@@ -37,7 +37,7 @@ export default function LoginPage() {
       setError("Credenciales inválidas");
       setLoading(false);
     } else {
-      router.push("/clientes");
+      router.push("/dashboard/clients");
       router.refresh();
     }
   };

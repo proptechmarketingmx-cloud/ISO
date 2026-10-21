@@ -15,26 +15,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Contraseña", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Credenciales inválidas");
-        }
+        const email =
+          typeof credentials?.email === "string"
+            ? credentials.email.trim().toLowerCase()
+            : "";
+        const password =
+          typeof credentials?.password === "string" ? credentials.password : "";
+        if (!email || !password) return null;
 
         const usuario = await prisma.usuario.findUnique({
-          where: { email: credentials.email as string },
+          where: { email },
         });
 
         if (!usuario || !usuario.activo) {
-          throw new Error("Usuario no encontrado o inactivo");
+          return null;
         }
 
         const passwordValido = await bcrypt.compare(
-          credentials.password as string,
+          password,
           usuario.passwordHash
         );
 
-        if (!passwordValido) {
-          throw new Error("Contraseña incorrecta");
-        }
+        if (!passwordValido) return null;
 
         // Actualizar último acceso
         await prisma.usuario.update({

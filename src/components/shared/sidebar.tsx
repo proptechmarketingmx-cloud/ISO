@@ -15,14 +15,14 @@ import {
 import { cn } from "@/lib/utils";
 
 const menuItems = [
-  { href: "/clientes", label: "Clientes", icon: Users, roles: ["ADMIN", "GERENTE", "ASESOR"] },
-  { href: "/propiedades", label: "Propiedades", icon: Home, roles: ["ADMIN", "GERENTE", "ASESOR"] },
-  { href: "/oportunidades", label: "Oportunidades", icon: Target, roles: ["ADMIN", "GERENTE", "ASESOR"] },
-  { href: "/asesores", label: "Asesores", icon: UserCog, roles: ["ADMIN", "GERENTE"] },
-  { href: "/matching", label: "Matching", icon: Network, roles: ["ADMIN", "GERENTE", "ASESOR"] },
-  { href: "/cna", label: "CNA", icon: BarChart3, roles: ["ADMIN", "GERENTE"] },
-  { href: "/reportes", label: "Reportes", icon: BarChart3, roles: ["ADMIN", "GERENTE"] },
-  { href: "/admin", label: "Administración", icon: Settings, roles: ["ADMIN"] },
+  { href: "/dashboard/clients", label: "Clientes", icon: Users, roles: ["ADMIN", "GERENTE", "ASESOR"] },
+  { href: "/dashboard/properties", label: "Propiedades", icon: Home, roles: ["ADMIN", "GERENTE", "ASESOR"] },
+  { href: "/dashboard/pipeline", label: "Oportunidades", icon: Target, roles: ["ADMIN", "GERENTE", "ASESOR"] },
+  { href: "/dashboard/advisors", label: "Asesores", icon: UserCog, roles: ["ADMIN", "GERENTE"] },
+  { href: "/dashboard/matching", label: "Matching", icon: Network, roles: ["ADMIN", "GERENTE", "ASESOR"] },
+  { href: "/dashboard/cna", label: "CNA", icon: BarChart3, roles: ["ADMIN", "GERENTE"] },
+  { href: "/dashboard/reports", label: "Reportes", icon: BarChart3, roles: ["ADMIN", "GERENTE"] },
+  { href: "/dashboard/admin", label: "Administración", icon: Settings, roles: ["ADMIN"] },
 ];
 
 export function Sidebar({ rol }: { rol: string }) {
