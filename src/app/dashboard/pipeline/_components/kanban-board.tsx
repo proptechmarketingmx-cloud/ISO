@@ -7,7 +7,7 @@ import {
   Draggable,
   DropResult,
 } from "@hello-pangea/dnd"
-import { EstadoOportunidad } from "@prisma/client"
+import { EstadoLead } from "@prisma/client"
 import { Loader2, Trash2, GripVertical, DollarSign, Target } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -15,7 +15,7 @@ import { updateOportunidadEstado, deleteOportunidad } from "../actions"
 
 // ─── Column config ────────────────────────────────────────────────────────────
 const COLUMNAS: {
-  id: EstadoOportunidad
+  id: EstadoLead
   label: string
   color: string
   headerColor: string
@@ -33,13 +33,25 @@ const COLUMNAS: {
     headerColor: "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300",
   },
   {
-    id: "VISITA_PROGRAMADA",
+    id: "CALIFICADO",
+    label: "Calificado",
+    color: "bg-cyan-50 dark:bg-cyan-950/30",
+    headerColor: "bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300",
+  },
+  {
+    id: "VISITA_AGENDADA",
     label: "Visita Programada",
     color: "bg-violet-50 dark:bg-violet-950/30",
     headerColor: "bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300",
   },
   {
-    id: "EN_NEGOCIACION",
+    id: "PROPUESTA_ENVIADA",
+    label: "Propuesta Enviada",
+    color: "bg-indigo-50 dark:bg-indigo-950/30",
+    headerColor: "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300",
+  },
+  {
+    id: "NEGOCIACION",
     label: "En Negociación",
     color: "bg-amber-50 dark:bg-amber-950/30",
     headerColor: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300",
@@ -56,18 +68,23 @@ const COLUMNAS: {
     color: "bg-red-50 dark:bg-red-950/30",
     headerColor: "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300",
   },
+  {
+    id: "DESCARTADO",
+    label: "Descartado",
+    color: "bg-zinc-50 dark:bg-zinc-950/30",
+    headerColor: "bg-zinc-100 dark:bg-zinc-900/40 text-zinc-700 dark:text-zinc-300",
+  },
 ]
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface OportunidadCard {
-  id_oportunidad: number
-  titulo: string
-  estado: EstadoOportunidad
-  valor_estimado: number | null
-  probabilidad: number
+  id: number
+  estado: EstadoLead
+  valorEstimado: number | null
+  probabilidadCierre: number
   notas: string | null
-  cliente: { nombre: string; apellido_paterno: string }
-  propiedad?: { titulo: string } | null
+  cliente: { nombre: string; apellidoPaterno: string | null }
+  propiedad: { titulo: string }
 }
 
 interface Props {
@@ -76,10 +93,10 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function KanbanBoard({ initialOportunidades }: Props) {
-  // Estado local: mapa de EstadoOportunidad → tarjetas
-  const [columns, setColumns] = useState<Record<EstadoOportunidad, OportunidadCard[]>>(
+  // Estado local: mapa de EstadoLead → tarjetas
+  const [columns, setColumns] = useState<Record<EstadoLead, OportunidadCard[]>>(
     () => {
-      const map = {} as Record<EstadoOportunidad, OportunidadCard[]>
+      const map = {} as Record<EstadoLead, OportunidadCard[]>
       COLUMNAS.forEach((col) => {
         map[col.id] = initialOportunidades.filter((o) => o.estado === col.id)
       })
@@ -99,8 +116,8 @@ export function KanbanBoard({ initialOportunidades }: Props) {
       source.index === destination.index
     ) return
 
-    const srcCol = source.droppableId as EstadoOportunidad
-    const dstCol = destination.droppableId as EstadoOportunidad
+    const srcCol = source.droppableId as EstadoLead
+    const dstCol = destination.droppableId as EstadoLead
     const id = parseInt(draggableId, 10)
 
     // Optimistic update
@@ -125,7 +142,7 @@ export function KanbanBoard({ initialOportunidades }: Props) {
           // Rollback
           setColumns((prev) => {
             const dstItems = [...prev[dstCol]]
-            const idx = dstItems.findIndex((o) => o.id_oportunidad === id)
+            const idx = dstItems.findIndex((o) => o.id === id)
             const [moved] = dstItems.splice(idx, 1)
             moved.estado = srcCol
             const srcItems = [...prev[srcCol]]
@@ -139,12 +156,12 @@ export function KanbanBoard({ initialOportunidades }: Props) {
   }
 
   // ── Delete handler ────────────────────────────────────────────────────────
-  const handleDelete = (id: number, estado: EstadoOportunidad) => {
+  const handleDelete = (id: number, estado: EstadoLead) => {
     if (!confirm("¿Eliminar esta oportunidad?")) return
     // Optimistic remove
     setColumns((prev) => ({
       ...prev,
-      [estado]: prev[estado].filter((o) => o.id_oportunidad !== id),
+      [estado]: prev[estado].filter((o) => o.id !== id),
     }))
     startTransition(async () => {
       const res = await deleteOportunidad(id)
@@ -192,8 +209,8 @@ export function KanbanBoard({ initialOportunidades }: Props) {
                 >
                   {columns[col.id].map((op, index) => (
                     <Draggable
-                      key={op.id_oportunidad}
-                      draggableId={String(op.id_oportunidad)}
+                      key={op.id}
+                      draggableId={String(op.id)}
                       index={index}
                     >
                       {(prov, snap) => (
@@ -203,7 +220,7 @@ export function KanbanBoard({ initialOportunidades }: Props) {
                           className={cn(
                             "bg-card rounded-lg border shadow-sm p-3 text-sm select-none group",
                             snap.isDragging && "shadow-lg ring-2 ring-primary/30 rotate-1",
-                            pendingId === op.id_oportunidad && "opacity-60"
+                            pendingId === op.id && "opacity-60"
                           )}
                         >
                           {/* Drag handle + delete */}
@@ -215,7 +232,7 @@ export function KanbanBoard({ initialOportunidades }: Props) {
                               <GripVertical className="h-4 w-4" />
                             </div>
                             <button
-                              onClick={() => handleDelete(op.id_oportunidad, op.estado)}
+                              onClick={() => handleDelete(op.id, op.estado)}
                               className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                               title="Eliminar"
                             >
@@ -225,47 +242,38 @@ export function KanbanBoard({ initialOportunidades }: Props) {
 
                           {/* Title */}
                           <p className="font-semibold leading-tight mb-1 line-clamp-2">
-                            {op.titulo}
+                            {op.propiedad.titulo}
                           </p>
 
                           {/* Cliente */}
                           <p className="text-xs text-muted-foreground truncate mb-2">
                             👤{" "}
-                            {op.cliente.nombre}{" "}
-                            {op.cliente.apellido_paterno !== "-"
-                              ? op.cliente.apellido_paterno
-                              : ""}
+                            {op.cliente.nombre} {op.cliente.apellidoPaterno || ""}
                           </p>
 
                           {/* Propiedad */}
-                          {op.propiedad && (
-                            <p className="text-xs text-muted-foreground truncate mb-2">
-                              🏠 {op.propiedad.titulo}
-                            </p>
-                          )}
-
                           {/* Valor + Probabilidad */}
                           <div className="flex items-center justify-between gap-2 mt-2">
-                            {op.valor_estimado != null ? (
+                            {op.valorEstimado != null ? (
                               <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                                 <DollarSign className="h-3 w-3" />
                                 {new Intl.NumberFormat("es-MX", {
                                   style: "currency",
                                   currency: "MXN",
                                   maximumFractionDigits: 0,
-                                }).format(op.valor_estimado)}
+                                }).format(op.valorEstimado)}
                               </span>
                             ) : (
                               <span />
                             )}
                             <span className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Target className="h-3 w-3" />
-                              {op.probabilidad}%
+                              {op.probabilidadCierre}%
                             </span>
                           </div>
 
                           {/* Loading indicator */}
-                          {pendingId === op.id_oportunidad && (
+                          {pendingId === op.id && (
                             <div className="flex justify-center mt-2">
                               <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                             </div>

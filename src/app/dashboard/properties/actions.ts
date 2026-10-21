@@ -2,85 +2,82 @@
 
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
 
-const propiedadSchema = z.object({
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+
+const propertySchema = z.object({
   titulo: z.string().trim().min(3, "El título debe tener al menos 3 caracteres"),
   tipo: z.string().trim().min(1, "El tipo de propiedad es obligatorio"),
-  tipo_operacion: z.string().trim().default("Venta"),
+  tipo_operacion: z.string().trim().min(1, "La operación es obligatoria"),
   ciudad: z.string().trim().min(1, "La ciudad es obligatoria"),
-  precio: z.coerce
-    .number({ invalid_type_error: "El precio debe ser un número válido" })
-    .positive("El precio debe ser un número positivo"),
-  recamaras: z.coerce
-    .number({ invalid_type_error: "Las recámaras deben ser un número" })
-    .int("Debe ser un número entero")
-    .nonnegative("No puede ser negativo")
-    .default(0),
-  banos: z.coerce
-    .number({ invalid_type_error: "Los baños deben ser un número" })
-    .nonnegative("No puede ser negativo")
-    .default(0),
+  precio: z.coerce.number().positive("El precio debe ser positivo"),
+  recamaras: z.coerce.number().int().nonnegative().default(0),
+  banos: z.coerce.number().nonnegative().default(0),
 })
 
 export type PropertyActionState = {
   success?: boolean
-  data?: any
+  data?: unknown
   error?: string
   fieldErrors?: Record<string, string[]>
 }
 
+function parsePropertyForm(formData: FormData) {
+  return propertySchema.safeParse({
+    titulo: formData.get("titulo"),
+    tipo: formData.get("tipo"),
+    tipo_operacion: formData.get("tipo_operacion") || "Venta",
+    ciudad: formData.get("ciudad"),
+    precio: formData.get("precio"),
+    recamaras: formData.get("recamaras") || 0,
+    banos: formData.get("banos") || 0,
+  })
+}
+
+async function getCatalogIds(tipo: string, operacion: string) {
+  const tipoPropiedad = await prisma.tipoPropiedad.upsert({
+    where: { nombre: tipo },
+    update: { activo: true },
+    create: { nombre: tipo, activo: true },
+  })
+  const tipoOperacion = await prisma.tipoOperacion.upsert({
+    where: { nombre: operacion },
+    update: { activo: true },
+    create: { nombre: operacion, activo: true },
+  })
+
+  return { tipoPropiedadId: tipoPropiedad.id, tipoOperacionId: tipoOperacion.id }
+}
+
 export async function createProperty(formData: FormData): Promise<PropertyActionState> {
+  const session = await auth()
+  if (!session?.user) return { error: "Debes iniciar sesión para crear propiedades" }
+
+  const validation = parsePropertyForm(formData)
+  if (!validation.success) {
+    return {
+      error: "Por favor corrige los campos marcados",
+      fieldErrors: validation.error.flatten().fieldErrors,
+    }
+  }
+
   try {
-    const rawData = {
-      titulo: formData.get("titulo"),
-      tipo: formData.get("tipo"),
-      tipo_operacion: formData.get("tipo_operacion") || "Venta",
-      ciudad: formData.get("ciudad"),
-      precio: formData.get("precio"),
-      recamaras: formData.get("recamaras") || 0,
-      banos: formData.get("banos") || 0,
-    }
-
-    const validation = propiedadSchema.safeParse(rawData)
-
-    if (!validation.success) {
-      return {
-        error: "Por favor corrige los campos marcados",
-        fieldErrors: validation.error.flatten().fieldErrors,
-      }
-    }
-
-    const session = await verifySession()
-    const tenantId = session?.tenantId || 1
-    const validatedData = validation.data
-
-    const nuevaPropiedad = await prisma.propiedad.create({
+    const data = validation.data
+    const catalogIds = await getCatalogIds(data.tipo, data.tipo_operacion)
+    const property = await prisma.propiedad.create({
       data: {
-        id_tenant: tenantId,
-        id_asesor: 1,
-        titulo: validatedData.titulo,
-        tipo: validatedData.tipo,
-        tipo_operacion: validatedData.tipo_operacion,
-        ciudad: validatedData.ciudad,
-        precio: validatedData.precio,
-        recamaras: validatedData.recamaras,
-        banos: validatedData.banos,
-        status: "disponible",
-        creditos_aceptados: [],
-        ideal_para: [],
-        amenidades: [],
-        servicios: [],
+        titulo: data.titulo,
+        ciudad: data.ciudad,
+        precio: data.precio,
+        recamaras: data.recamaras,
+        banos: data.banos,
+        ...catalogIds,
       },
     })
 
     revalidatePath("/dashboard/properties")
-
-    return {
-      success: true,
-      data: nuevaPropiedad,
-    }
+    return { success: true, data: property }
   } catch (error) {
     console.error("Error al crear propiedad:", error)
     return {
@@ -89,7 +86,6 @@ export async function createProperty(formData: FormData): Promise<PropertyAction
   }
 }
 
-// Alias para compatibilidad hacia atrás
 export async function crearPropiedad(formData: FormData): Promise<PropertyActionState> {
   return createProperty(formData)
 }
@@ -98,75 +94,40 @@ export async function updateProperty(
   id: number,
   formData: FormData
 ): Promise<PropertyActionState> {
+  const session = await auth()
+  if (!session?.user) return { error: "Debes iniciar sesión para editar propiedades" }
+  if (!Number.isInteger(id) || id <= 0) return { error: "Identificador de propiedad inválido" }
+
+  const validation = parsePropertyForm(formData)
+  if (!validation.success) {
+    return {
+      error: "Por favor corrige los campos marcados",
+      fieldErrors: validation.error.flatten().fieldErrors,
+    }
+  }
+
   try {
-    const session = await verifySession()
-    const tenantId = session?.tenantId || 1
-
-    if (!id || typeof id !== "number" || isNaN(id)) {
-      return { error: "Identificador de propiedad inválido" }
-    }
-
-    const rawData = {
-      titulo: formData.get("titulo"),
-      tipo: formData.get("tipo"),
-      tipo_operacion: formData.get("tipo_operacion") || "Venta",
-      ciudad: formData.get("ciudad"),
-      precio: formData.get("precio"),
-      recamaras: formData.get("recamaras") || 0,
-      banos: formData.get("banos") || 0,
-    }
-
-    const validation = propiedadSchema.safeParse(rawData)
-
-    if (!validation.success) {
-      return {
-        error: "Por favor corrige los campos marcados",
-        fieldErrors: validation.error.flatten().fieldErrors,
-      }
-    }
-
-    // Verificar existencia y que pertenezca al tenant del usuario
-    const existing = await prisma.propiedad.findFirst({
-      where: {
-        id_propiedad: id,
-        id_tenant: tenantId,
-        deletedAt: null,
-      },
-    })
-
-    if (!existing) {
-      return { error: "La propiedad no existe o no tienes permisos para editarla" }
-    }
-
-    const validatedData = validation.data
-
-    const propiedadActualizada = await prisma.propiedad.update({
-      where: {
-        id_propiedad: id,
-      },
+    const data = validation.data
+    const catalogIds = await getCatalogIds(data.tipo, data.tipo_operacion)
+    const property = await prisma.propiedad.update({
+      where: { id },
       data: {
-        titulo: validatedData.titulo,
-        tipo: validatedData.tipo,
-        tipo_operacion: validatedData.tipo_operacion,
-        ciudad: validatedData.ciudad,
-        precio: validatedData.precio,
-        recamaras: validatedData.recamaras,
-        banos: validatedData.banos,
+        titulo: data.titulo,
+        ciudad: data.ciudad,
+        precio: data.precio,
+        recamaras: data.recamaras,
+        banos: data.banos,
+        ...catalogIds,
       },
     })
 
     revalidatePath("/dashboard/properties")
     revalidatePath(`/dashboard/properties/${id}/editar`)
-
-    return {
-      success: true,
-      data: propiedadActualizada,
-    }
+    return { success: true, data: property }
   } catch (error) {
     console.error("Error al actualizar propiedad:", error)
     return {
-      error:
-        error instanceof Error ? error.message : "Error inesperado al actualizar la propiedad",
+      error: error instanceof Error ? error.message : "Error inesperado al actualizar la propiedad",
     }
   }
 }

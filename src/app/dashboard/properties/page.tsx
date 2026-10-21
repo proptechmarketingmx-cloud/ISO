@@ -12,29 +12,18 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 
-const statusColor: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  disponible: "default",
-  apartada: "secondary",
-  vendida: "outline",
-  rentada: "outline",
-}
-
 export default async function PropertiesPage() {
-  const session = await verifySession()
-  const tenantId = session?.tenantId || 1
+  const session = await auth()
+  if (!session?.user) redirect("/login")
 
   const properties = await prisma.propiedad.findMany({
-    where: {
-      id_tenant: tenantId,
-      deletedAt: null,
-    },
-    orderBy: {
-      fecha_registro: "desc",
-    },
+    include: { tipoPropiedad: true, tipoOperacion: true },
+    orderBy: { fechaRegistro: "desc" },
   })
 
   return (
@@ -80,18 +69,18 @@ export default async function PropertiesPage() {
                 <TableHead>Operación</TableHead>
                 <TableHead>Ciudad</TableHead>
                 <TableHead className="text-right">Precio</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {properties.map((p) => (
-                <TableRow key={p.id_propiedad}>
+                <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.titulo}</TableCell>
-                  <TableCell>{p.tipo}</TableCell>
+                  <TableCell>{p.tipoPropiedad.nombre}</TableCell>
                   <TableCell>
-                    <Badge variant={p.tipo_operacion === "Venta" ? "default" : "secondary"}>
-                      {p.tipo_operacion}
+                    <Badge variant={p.tipoOperacion.nombre === "Venta" ? "default" : "secondary"}>
+                      {p.tipoOperacion.nombre}
                     </Badge>
                   </TableCell>
                   <TableCell>{p.ciudad || "—"}</TableCell>
@@ -103,13 +92,11 @@ export default async function PropertiesPage() {
                     })}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusColor[p.status] ?? "outline"}>
-                      {p.status}
-                    </Badge>
+                    {p.estado || "—"}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/dashboard/properties/${p.id_propiedad}/editar`}>
+                      <Link href={`/dashboard/properties/${p.id}/editar`}>
                         <Pencil className="h-4 w-4 mr-1" />
                         Editar
                       </Link>

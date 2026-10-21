@@ -1,9 +1,9 @@
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { ClientForm } from "../../_components/client-form"
 
 interface EditarClientePageProps {
@@ -23,26 +23,14 @@ export default async function EditarClientePage({
     notFound()
   }
 
-  const session = await verifySession()
-  const tenantId = session?.tenantId || 1
+  const session = await auth()
+  if (!session?.user) redirect("/login")
 
   const client = await prisma.cliente.findUnique({
-    where: {
-      id_cliente: idNumber,
-    },
-    include: {
-      notas: {
-        take: 1,
-        orderBy: {
-          fecha: "desc",
-        },
-      },
-    },
+    where: { id: idNumber },
   })
 
-  if (!client || client.id_tenant !== tenantId || client.deletedAt) {
-    notFound()
-  }
+  if (!client) notFound()
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -55,15 +43,32 @@ export default async function EditarClientePage({
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Editar Cliente</h1>
           <p className="text-muted-foreground mt-1">
-            Modifica la información y notas del prospecto #{client.id_cliente} ({client.nombre}).
+            Modifica la información del prospecto #{client.id} ({client.nombre}).
           </p>
         </div>
       </div>
 
       <ClientForm
         initialData={{
-          ...client,
-          ultimaNota: client.notas[0]?.contenido || null,
+          id_cliente: client.id,
+          nombre: client.nombre,
+          apellido_paterno: client.apellidoPaterno,
+          correo: client.email,
+          telefono_principal: client.telefono,
+          enganche_disponible: client.engancheDisponible,
+          capacidad_credito_max: client.capacidadCreditoMax,
+          ingreso_mensual: client.ingresoMensual,
+          presupuesto_min: client.presupuestoMin,
+          presupuesto_max: client.presupuestoMax,
+          operacion: client.tipoOperacionDeseada,
+          tipo_propiedad: client.tipoPropiedadDeseada,
+          ciudad_busqueda: client.ciudad,
+          estado_busqueda: client.estado,
+          fraccionamiento_colonia: client.colonia,
+          habitaciones_pa: client.recamarasMin,
+          banos: client.banosMin,
+          m2_terreno_min: client.m2TerrenoMin,
+          m2_construccion_min: client.m2ConstruccionMin,
         }}
       />
     </div>

@@ -12,21 +12,18 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 
 export default async function ClientsPage() {
-  const session = await verifySession()
-  const tenantId = session?.tenantId || 1
+  const session = await auth()
+  if (!session?.user) redirect("/login")
 
   const clients = await prisma.cliente.findMany({
-    where: {
-      id_tenant: tenantId,
-      deletedAt: null,
-    },
     orderBy: {
-      fecha_registro: "desc",
+      fechaRegistro: "desc",
     },
   })
 
@@ -81,37 +78,37 @@ export default async function ClientsPage() {
             </TableHeader>
             <TableBody>
               {clients.map((cliente) => {
-                const nombreCompleto = [cliente.nombre, cliente.apellido_paterno]
-                  .filter((p) => p && p !== "-")
+                const nombreCompleto = [cliente.nombre, cliente.apellidoPaterno]
+                  .filter(Boolean)
                   .join(" ")
 
                 const presupuestoFormateado =
-                  cliente.presupuesto_min != null
+                  cliente.presupuestoMin != null
                     ? new Intl.NumberFormat("es-MX", {
                         style: "currency",
                         currency: "MXN",
                         maximumFractionDigits: 0,
-                      }).format(cliente.presupuesto_min)
+                      }).format(cliente.presupuestoMin)
                     : "—"
 
                 return (
-                  <TableRow key={cliente.id_cliente}>
+                  <TableRow key={cliente.id}>
                     <TableCell className="font-medium">
                       <Link
-                        href={`/dashboard/clients/${cliente.id_cliente}`}
+                        href={`/dashboard/clients/${cliente.id}`}
                         className="hover:underline font-semibold text-primary"
                       >
                         {nombreCompleto || cliente.nombre}
                       </Link>
                     </TableCell>
                     <TableCell>
-                      {cliente.operacion ? (
+                      {cliente.tipoOperacionDeseada ? (
                         <Badge
                           variant={
-                            cliente.operacion === "COMPRA" ? "default" : "secondary"
+                            cliente.tipoOperacionDeseada.toLowerCase() === "venta" ? "default" : "secondary"
                           }
                         >
-                          {cliente.operacion}
+                          {cliente.tipoOperacionDeseada}
                         </Badge>
                       ) : (
                         "—"
@@ -120,24 +117,24 @@ export default async function ClientsPage() {
                     <TableCell>{presupuestoFormateado}</TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                        {cliente.correo && (
+                        {cliente.email && (
                           <span className="flex items-center gap-1">
                             <Mail className="h-3 w-3" />
-                            {cliente.correo}
+                            {cliente.email}
                           </span>
                         )}
-                        {cliente.telefono_principal && (
+                        {cliente.telefono && (
                           <span className="flex items-center gap-1">
                             <Phone className="h-3 w-3" />
-                            {cliente.telefono_principal}
+                            {cliente.telefono}
                           </span>
                         )}
-                        {!cliente.correo && !cliente.telefono_principal && "—"}
+                        {!cliente.email && !cliente.telefono && "—"}
                       </div>
                     </TableCell>
                     <TableCell>
                       <span className="capitalize text-xs px-2 py-0.5 rounded-full bg-muted font-medium">
-                        {cliente.estado_cliente || "nuevo"}
+                        {cliente.estadoLead.replaceAll("_", " ").toLowerCase()}
                       </span>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
@@ -145,18 +142,18 @@ export default async function ClientsPage() {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",
-                      }).format(new Date(cliente.fecha_registro))}
+                      }).format(cliente.fechaRegistro)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/dashboard/clients/${cliente.id_cliente}`}>
+                          <Link href={`/dashboard/clients/${cliente.id}`}>
                             <Eye className="h-4 w-4 mr-1" />
                             Ver Ficha
                           </Link>
                         </Button>
                         <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/dashboard/clients/${cliente.id_cliente}/editar`}>
+                          <Link href={`/dashboard/clients/${cliente.id}/editar`}>
                             <Pencil className="h-4 w-4 mr-1" />
                             Editar
                           </Link>
@@ -172,49 +169,4 @@ export default async function ClientsPage() {
       )}
     </div>
   )
-}
-
-// src/app/(dashboard)/clientes/page.tsx
-import { prisma } from "@/lib/prisma";
-import { ClientesTable, Cliente } from "@/components/tables/clientes-table";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Plus } from "lucide-react";
-
-export const dynamic = "force-dynamic";
-
-export default async function ClientesPage() {
-  const clientes = await prisma.cliente.findMany({
-    orderBy: { fechaRegistro: "desc" },
-    select: {
-      id: true,
-      nombre: true,
-      apellidoPaterno: true,
-      telefono: true,
-      email: true,
-      ciudad: true,
-      estadoLead: true,
-      scoreCna: true,
-    },
-  });
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Clientes</h1>
-          <p className="text-slate-500 mt-1">
-            Gestiona tus leads y clientes
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/clientes/nuevo">
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Cliente
-          </Link>
-        </Button>
-      </div>
-      <ClientesTable data={clientes as Cliente[]} />
-    </div>
-  );
 }

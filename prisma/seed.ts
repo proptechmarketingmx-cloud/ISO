@@ -1,55 +1,77 @@
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient, Rol } from "@prisma/client"
+import bcrypt from "bcryptjs"
 
-const prisma = new PrismaClient()
+function getSeedDatabaseUrl() {
+  const url = process.env.DIRECT_URL ?? process.env.DATABASE_URL
+  if (!url) throw new Error("DIRECT_URL or DATABASE_URL must be set before seeding")
+  return url
+}
+
+const prisma = new PrismaClient({
+  datasources: { db: { url: getSeedDatabaseUrl() } },
+})
 
 async function main() {
-  console.log("Iniciando seed de la base de datos...")
+  const email = process.env.SEED_ADMIN_EMAIL
+  const password = process.env.SEED_ADMIN_PASSWORD
 
-  // 1. Crear o actualizar Tenant base
-  const tenant = await prisma.tenant.upsert({
-    where: { slug: "proptech-mx" },
+  if (!email || !password) {
+    throw new Error("SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set before seeding")
+  }
+
+  const passwordHash = await bcrypt.hash(password, 12)
+
+  await prisma.usuario.upsert({
+    where: { email },
     update: {
-      nombre: "PropTech MX",
+      nombre: "Administrador",
+      passwordHash,
+      rol: Rol.ADMIN,
       activo: true,
     },
     create: {
-      nombre: "PropTech MX",
-      slug: "proptech-mx",
-      plan: "pro",
+      nombre: "Administrador",
+      email,
+      passwordHash,
+      rol: Rol.ADMIN,
       activo: true,
     },
   })
 
-  console.log(`Tenant listo: ${tenant.nombre} (ID: ${tenant.id_tenant})`)
-
-  // 2. Crear o actualizar Asesor base
-  const asesor = await prisma.asesor.upsert({
-    where: { correo: "admin@proptech.mx" },
+  await prisma.asesor.upsert({
+    where: { email: "asesor@empresa.com" },
     update: {
-      nombre: "Admin",
-      apellidos: "Principal",
-      id_tenant: tenant.id_tenant,
-      status: "activo",
+      nombre: "Asesor de prueba",
+      activo: true,
     },
     create: {
-      id_tenant: tenant.id_tenant,
-      nombre: "Admin",
-      apellidos: "Principal",
-      correo: "admin@proptech.mx",
-      telefono: "5512345678",
-      status: "activo",
+      nombre: "Asesor de prueba",
+      email: "asesor@empresa.com",
+      activo: true,
     },
   })
 
-  console.log(`Asesor listo: ${asesor.nombre} ${asesor.apellidos} (ID: ${asesor.id_asesor})`)
+  for (const nombre of ["Casa", "Departamento"]) {
+    await prisma.tipoPropiedad.upsert({
+      where: { nombre },
+      update: { activo: true },
+      create: { nombre, activo: true },
+    })
+  }
 
-  console.log("Seed completado exitosamente.")
+  for (const nombre of ["Venta", "Renta"]) {
+    await prisma.tipoOperacion.upsert({
+      where: { nombre },
+      update: { activo: true },
+      create: { nombre, activo: true },
+    })
+  }
 }
 
 main()
-  .catch((e) => {
-    console.error("Error durante el seed:", e)
-    process.exit(1)
+  .catch((error) => {
+    console.error("Error durante el seed:", error)
+    process.exitCode = 1
   })
   .finally(async () => {
     await prisma.$disconnect()

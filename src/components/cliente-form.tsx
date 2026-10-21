@@ -3,7 +3,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { clienteSchema, ClienteFormData } from "@/lib/validations/cliente";
+import { clienteSchema, type ClienteFormData } from "@/lib/cliente";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

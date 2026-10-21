@@ -1,9 +1,9 @@
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { PropertyForm } from "../../_components/property-form"
 
 interface EditarPropiedadPageProps {
@@ -23,18 +23,15 @@ export default async function EditarPropiedadPage({
     notFound()
   }
 
-  const session = await verifySession()
-  const tenantId = session?.tenantId || 1
+  const session = await auth()
+  if (!session?.user) redirect("/login")
 
   const property = await prisma.propiedad.findUnique({
-    where: {
-      id_propiedad: idNumber,
-    },
+    where: { id: idNumber },
+    include: { tipoPropiedad: true, tipoOperacion: true },
   })
 
-  if (!property || property.id_tenant !== tenantId || property.deletedAt) {
-    notFound()
-  }
+  if (!property) notFound()
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -47,17 +44,17 @@ export default async function EditarPropiedadPage({
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Editar Propiedad</h1>
           <p className="text-muted-foreground mt-1">
-            Modifica los detalles del inmueble #{property.id_propiedad} ({property.titulo}).
+            Modifica los detalles del inmueble #{property.id} ({property.titulo}).
           </p>
         </div>
       </div>
 
       <PropertyForm
         initialData={{
-          id_propiedad: property.id_propiedad,
+          id_propiedad: property.id,
           titulo: property.titulo,
-          tipo: property.tipo,
-          tipo_operacion: property.tipo_operacion,
+          tipo: property.tipoPropiedad.nombre,
+          tipo_operacion: property.tipoOperacion.nombre,
           ciudad: property.ciudad,
           precio: property.precio,
           recamaras: property.recamaras,

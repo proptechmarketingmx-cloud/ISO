@@ -1,165 +1,117 @@
+import { redirect } from "next/navigation"
+import { EstadoLead } from "@prisma/client"
 import { Kanban } from "lucide-react"
+
+import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
 import { KanbanBoard, type OportunidadCard } from "./_components/kanban-board"
 import { NuevaOportunidadDialog } from "./_components/nueva-oportunidad-dialog"
-import { EstadoOportunidad } from "@prisma/client"
 
 export const dynamic = "force-dynamic"
 
+const closedStates: EstadoLead[] = [
+  EstadoLead.CERRADO_GANADO,
+  EstadoLead.CERRADO_PERDIDO,
+  EstadoLead.DESCARTADO,
+]
+
 export default async function PipelinePage() {
-  const session = await verifySession()
-  const tenantId = session?.tenantId || 1
+  const session = await auth()
+  if (!session?.user) redirect("/login")
 
-  type OportunidadRecord = {
-    id_oportunidad: number
-    titulo: string
-    estado: EstadoOportunidad
-    valor_estimado: number | null
-    probabilidad: number
-    notas: string | null
-    cliente: { nombre: string; apellido_paterno: string }
-    propiedad?: { titulo: string } | null
-  }
+  const [opportunities, clients, properties] = await Promise.all([
+    prisma.oportunidad.findMany({
+      include: {
+        cliente: { select: { nombre: true, apellidoPaterno: true } },
+        propiedad: { select: { titulo: true } },
+      },
+      orderBy: { fechaCreacion: "desc" },
+    }),
+    prisma.cliente.findMany({
+      select: { id: true, nombre: true, apellidoPaterno: true },
+      orderBy: { nombre: "asc" },
+    }),
+    prisma.propiedad.findMany({
+      select: { id: true, titulo: true },
+      orderBy: { titulo: "asc" },
+    }),
+  ])
 
-  let oportunidades: OportunidadRecord[] = []
-  const prismaExtended = prisma as unknown as {
-    oportunidad?: {
-      findMany: (args: unknown) => Promise<OportunidadRecord[]>
-    }
-  }
+  const cardsData: OportunidadCard[] = opportunities.map((opportunity) => ({
+    id: opportunity.id,
+    estado: opportunity.estado,
+    valorEstimado: opportunity.valorEstimado,
+    probabilidadCierre: opportunity.probabilidadCierre,
+    notas: opportunity.notas,
+    cliente: opportunity.cliente,
+    propiedad: opportunity.propiedad,
+  }))
 
-  if (prismaExtended.oportunidad && typeof prismaExtended.oportunidad.findMany === "function") {
-    try {
-      oportunidades = await prismaExtended.oportunidad.findMany({
-        where: { id_tenant: tenantId },
-        orderBy: { creado_en: "asc" },
-        include: {
-          cliente: {
-            select: { nombre: true, apellido_paterno: true },
-          },
-          propiedad: {
-            select: { titulo: true },
-          },
-        },
-      })
-    } catch {
-      oportunidades = []
-    }
-  }
+  const valorGanado = opportunities
+    .filter((opportunity) => opportunity.estado === EstadoLead.CERRADO_GANADO)
+    .reduce((sum, opportunity) => sum + (opportunity.valorEstimado ?? 0), 0)
+  const valorPipeline = opportunities
+    .filter(
+      (opportunity) =>
+        !closedStates.includes(opportunity.estado)
+    )
+    .reduce((sum, opportunity) => sum + (opportunity.valorEstimado ?? 0), 0)
 
-  // Fetch clientes para el diálogo de creación
-  const clientes = await prisma.cliente.findMany({
-    where: { id_tenant: tenantId, deletedAt: null },
-    select: { id_cliente: true, nombre: true, apellido_paterno: true },
-    orderBy: { nombre: "asc" },
-  })
-
-  // Totales por columna
-  const totalPorEstado: Record<EstadoOportunidad, number> = {
-    NUEVO: 0,
-    CONTACTADO: 0,
-    VISITA_PROGRAMADA: 0,
-    EN_NEGOCIACION: 0,
-    CERRADO_GANADO: 0,
-    CERRADO_PERDIDO: 0,
-  }
-  oportunidades.forEach((o) => {
-    totalPorEstado[o.estado] = (totalPorEstado[o.estado] || 0) + 1
-  })
-
-  const valorTotal = oportunidades
-    .filter((o) => o.estado === "CERRADO_GANADO")
-    .reduce((sum, o) => sum + (o.valor_estimado || 0), 0)
-
-  const valorPipeline = oportunidades
-    .filter((o) => !["CERRADO_GANADO", "CERRADO_PERDIDO"].includes(o.estado))
-    .reduce((sum, o) => sum + (o.valor_estimado || 0), 0)
-
-  const formatMXN = (val: number) =>
+  const formatMXN = (value: number) =>
     new Intl.NumberFormat("es-MX", {
       style: "currency",
       currency: "MXN",
       maximumFractionDigits: 0,
-    }).format(val)
-
-  const cardsData: OportunidadCard[] = oportunidades.map((o) => ({
-    id_oportunidad: o.id_oportunidad,
-    titulo: o.titulo,
-    estado: o.estado,
-    valor_estimado: o.valor_estimado,
-    probabilidad: o.probabilidad,
-    notas: o.notas,
-    cliente: o.cliente,
-    propiedad: o.propiedad,
-  }))
+    }).format(value)
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
             <Kanban className="h-7 w-7" />
             Pipeline de Ventas
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="mt-1 text-muted-foreground">
             Embudo de conversión y seguimiento de oportunidades.
           </p>
         </div>
-        <NuevaOportunidadDialog clientes={clientes} />
+        <NuevaOportunidadDialog clientes={clients} propiedades={properties} />
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="rounded-lg border bg-card px-4 py-3">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-            Total Oportunidades
-          </p>
-          <p className="text-2xl font-bold mt-1">{oportunidades.length}</p>
-        </div>
-        <div className="rounded-lg border bg-card px-4 py-3">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-            En Activo
-          </p>
-          <p className="text-2xl font-bold mt-1">
-            {oportunidades.filter(
-              (o) => !["CERRADO_GANADO", "CERRADO_PERDIDO"].includes(o.estado)
-            ).length}
-          </p>
-        </div>
-        <div className="rounded-lg border bg-card px-4 py-3">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-            Valor en Pipeline
-          </p>
-          <p className="text-2xl font-bold mt-1 text-amber-600 dark:text-amber-400">
-            {formatMXN(valorPipeline)}
-          </p>
-        </div>
-        <div className="rounded-lg border bg-card px-4 py-3">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-            Cerrado Ganado
-          </p>
-          <p className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">
-            {formatMXN(valorTotal)}
-          </p>
-        </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Metric label="Total Oportunidades" value={opportunities.length} />
+        <Metric
+          label="En Activo"
+          value={
+            opportunities.filter(
+              (opportunity) =>
+                !closedStates.includes(opportunity.estado)
+            ).length
+          }
+        />
+        <Metric label="Valor en Pipeline" value={formatMXN(valorPipeline)} />
+        <Metric label="Cerrado Ganado" value={formatMXN(valorGanado)} />
       </div>
 
-      {/* Kanban Board */}
-      {clientes.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-12 text-center">
-          <p className="text-muted-foreground text-sm">
-            Necesitas al menos un cliente para crear oportunidades de venta.{" "}
-            <a href="/dashboard/clients/nueva" className="text-primary underline">
-              Agrega un cliente
-            </a>
-            .
-          </p>
+      {clients.length === 0 || properties.length === 0 ? (
+        <div className="rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground">
+          Registra al menos un cliente y una propiedad para crear oportunidades.
         </div>
       ) : (
         <KanbanBoard initialOportunidades={cardsData} />
       )}
+    </div>
+  )
+}
+
+function Metric({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-lg border bg-card px-4 py-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-bold">{value}</p>
     </div>
   )
 }

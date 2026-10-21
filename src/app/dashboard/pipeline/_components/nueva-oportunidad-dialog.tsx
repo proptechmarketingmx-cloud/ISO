@@ -25,32 +25,41 @@ import {
 import { createOportunidad, type PipelineActionState } from "../actions"
 
 interface Cliente {
-  id_cliente: number
+  id: number
   nombre: string
-  apellido_paterno: string
+  apellidoPaterno: string | null
+}
+
+interface Propiedad {
+  id: number
+  titulo: string
 }
 
 interface Props {
   clientes: Cliente[]
+  propiedades: Propiedad[]
 }
 
-export function NuevaOportunidadDialog({ clientes }: Props) {
+export function NuevaOportunidadDialog({ clientes, propiedades }: Props) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [idCliente, setIdCliente] = useState<string>("")
+  const [idPropiedad, setIdPropiedad] = useState<string>("")
   const [state, setState] = useState<PipelineActionState | null>(null)
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setState(null)
     const formData = new FormData(e.currentTarget)
-    formData.set("id_cliente", idCliente)
+    formData.set("clienteId", idCliente)
+    formData.set("propiedadId", idPropiedad)
 
     startTransition(async () => {
       const res = await createOportunidad(formData)
       if (res.success) {
         setOpen(false)
         setIdCliente("")
+        setIdPropiedad("")
       } else {
         setState(res)
       }
@@ -96,45 +105,64 @@ export function NuevaOportunidadDialog({ clientes }: Props) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="id_cliente">
+            <Label htmlFor="clienteId">
               Cliente <span className="text-destructive">*</span>
             </Label>
             <Select value={idCliente} onValueChange={setIdCliente}>
-              <SelectTrigger id="id_cliente" aria-invalid={!!fieldErrors.id_cliente}>
+              <SelectTrigger id="clienteId" aria-invalid={!!fieldErrors.clienteId}>
                 <SelectValue placeholder="Selecciona un cliente…" />
               </SelectTrigger>
               <SelectContent>
                 {clientes.map((c) => (
-                  <SelectItem key={c.id_cliente} value={String(c.id_cliente)}>
+                  <SelectItem key={c.id} value={String(c.id)}>
                     {c.nombre}{" "}
-                    {c.apellido_paterno && c.apellido_paterno !== "-"
-                      ? c.apellido_paterno
-                      : ""}
+                    {c.apellidoPaterno || ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {fieldErrors.id_cliente && (
-              <p className="text-xs text-destructive">{fieldErrors.id_cliente[0]}</p>
+            {fieldErrors.clienteId && (
+              <p className="text-xs text-destructive">{fieldErrors.clienteId[0]}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="propiedadId">
+              Propiedad <span className="text-destructive">*</span>
+            </Label>
+            <Select value={idPropiedad} onValueChange={setIdPropiedad}>
+              <SelectTrigger id="propiedadId" aria-invalid={!!fieldErrors.propiedadId}>
+                <SelectValue placeholder="Selecciona una propiedad…" />
+              </SelectTrigger>
+              <SelectContent>
+                {propiedades.map((property) => (
+                  <SelectItem key={property.id} value={String(property.id)}>
+                    {property.titulo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {fieldErrors.propiedadId && (
+              <p className="text-xs text-destructive">{fieldErrors.propiedadId[0]}</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="valor_estimado">Valor Estimado (MXN)</Label>
+              <Label htmlFor="valorEstimado">Valor Estimado (MXN)</Label>
               <Input
-                id="valor_estimado"
-                name="valor_estimado"
+                id="valorEstimado"
+                name="valorEstimado"
                 type="number"
                 step="any"
                 placeholder="Ej. 3500000"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="probabilidad">Probabilidad (%)</Label>
+              <Label htmlFor="probabilidadCierre">Probabilidad (%)</Label>
               <Input
-                id="probabilidad"
-                name="probabilidad"
+                id="probabilidadCierre"
+                name="probabilidadCierre"
                 type="number"
                 step="5"
                 min="0"
@@ -160,7 +188,7 @@ export function NuevaOportunidadDialog({ clientes }: Props) {
                 Cancelar
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={isPending || !idCliente}>
+            <Button type="submit" disabled={isPending || !idCliente || !idPropiedad}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isPending ? "Creando…" : "Crear Oportunidad"}
             </Button>

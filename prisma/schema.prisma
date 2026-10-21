@@ -7,6 +7,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================
@@ -109,7 +110,6 @@ model Cliente {
   referidoPorCliente        Cliente?     @relation("ReferidosCliente", fields: [referidoPorClienteId], references: [id])
   referidosClientes         Cliente[]    @relation("ReferidosCliente")
   referidoPorAsesor         Asesor?      @relation("ReferidosAsesor", fields: [referidoPorAsesorId], references: [id])
-  referidosAsesores         Asesor[]     @relation("ReferidosAsesor")
   
   oportunidades           Oportunidad[]
   compatibilidades        CompatibilidadClientePropiedad[]
